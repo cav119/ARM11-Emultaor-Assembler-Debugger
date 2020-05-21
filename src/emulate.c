@@ -39,7 +39,7 @@ void check_ptr_not_null(void *ptr, char error_msg[]) {
 	}
 }
 
-// Returns a pointer to an initialised CpuState 
+// Create a new CPU and an initialise the registers/memory to zero
 CpuState *cpu_state_init(void) {
 	CpuState *cpu_state = (CpuState *) malloc(sizeof(CpuState));
 	check_ptr_not_null(cpu_state, "Could not allocate cpu state memory");
@@ -82,6 +82,7 @@ void print_memory(CpuState *cpu_state, int from, int to){
     }
 }
 
+// prints first instruction (little endian)
 void print_first_instruction(CpuState *cpu_state) {
 	uint8_t byte1 = cpu_state->memory[3];
 	uint8_t byte2 = cpu_state->memory[2];
