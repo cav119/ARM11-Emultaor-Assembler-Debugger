@@ -1,16 +1,22 @@
 CC      = gcc
 CFLAGS  = -Wall -g -D_POSIX_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE -std=c99 -Werror -pedantic
 
+EMULATOR_SOURCE = emulator/utilities.c emulator/cpu_state.c emulator/pipeline.c
+
+
 .SUFFIXES: .c .o
 
 .PHONY: all clean
 
-all: assemble emulate
+all: emulate #assemble # uncomment for part 2
 
-assemble: assemble.o
-	gcc assemble.o -o assemble
+# uncomment this for part 2
+# assemble: assemble.o
+# 	$(CC) $(CFLAGS) $^ -o $@
+
 emulate: emulate.o
-	gcc emulate.c -o emulate
+	$(CC) $(CFLAGS) emulate.c $(EMULATOR_SOURCE) -o $@
+
 clean:
 	rm -f $(wildcard *.o)
 	rm -f assemble
