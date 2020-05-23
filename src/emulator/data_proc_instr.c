@@ -1,15 +1,4 @@
-typedef enum {
-	and = 0,
-	eor = 1,
-	sub = 2,
-	rsb = 3,
-	add = 4,
-	tst = 8,
-	teq = 9,
-	cmp = 10,
-	orr = 12,
-	mov = 13
-} opcode_type;
+#include "data_proc_instr.h"
 
 void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 	//Assertions/checks
@@ -41,17 +30,25 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 		//If bit 4 is 1:
 		if (process_mask(instr->code, 4, 4)) {
 			switch(process_mask(instr->code, 6, 5)) {
-				case 0:
-					operand_2 = logical_left(reg_contents, shift_amount);
+				case lsl:
+					operand_2 = reg_contents << shift_amount;
+					//C bit of CPSR is set to bit 32 after shift operation (carry out)
+					c_bit = (((uint64_t) reg_contents) >> 32) & 1;
 					break;
-				case 1:
-					operand_2 = logical_right(reg_contents, shift_amount);
+				case lsr:
+					operand_2 = reg_contents >> shift_amount;
+					//bit (shift_amount - 1) is the carry out
+					c_bit = (operand_2 >> (shift_amount - 1)) & 1;
 					break;
-				case 2: 
-					operand_2 = arithmetic_right(reg_contents, shift_amount);
+				case asr: 
+					operand_2 = arithmetic_shift_right(reg_contents, shift_amount);
+					//bit (shift_amount - 1) is the carry out
+					c_bit = (operand_2 >> (shift_amount - 1)) & 1;
 					break;
-				case 3:
+				case ror:
 					operand_2 = rotate_right(reg_contents, shift_amount);
+					//bit (shift_amount - 1) is the carry out
+					c_bit = (operand_2 >> (shift_amount - 1)) & 1;
 					break;
 				default:
 					//default should not be reached - error
@@ -61,26 +58,28 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 			//lower_byte of the register corresponding to bits 8-11
 			uint8_t lower_byte = *(cpu_state->registers + process_mask(instr->code, 8, 11));
 			switch(process_mask(instr->code, 6, 5)) {
-				case 0:
-					operand_2 = logical_left(reg_contents, lower_byte);
+				case lsl:
+					operand_2 = reg_contents << lower_byte; 
+					//C bit of CPSR is set to bit 32 after shift operation (carry out)
+					//c_bit = (1 << 32) >> lower_byte;
+					c_bit = (((uint64_t) reg_contents) >> 32) & 1;
 					break;
-				case 1:
-					operand_2 = logical_right(reg_contents, lower_byte);
+				case lsr:
+					operand_2 = reg_contents >> lower_byte; 
+					c_bit = (operand_2 >> (lower_byte - 1)) & 1;
 					break;
-				case 2: 
-					operand_2 = arithmetic_right(reg_contents, lower_byte);
+				case asr: 
+					operand_2 = arithmetic_shift_right(reg_contents, lower_byte);
+					c_bit = (operand_2 >> (lower_byte - 1)) & 1;
 					break;
-				case 3:
+				case ror:
 					operand_2 = rotate_right(reg_contents, lower_byte);
+					c_bit = (operand_2 >> (lower_byte - 1)) & 1;
 					break;
 				default:
 					//default should not be reached - error
 					exit(EXIT_FAILURE);
 			}
-		}
-		//CPSR C Flag
-		if (cpsr_enable_bit) {
-			//idk how to do this - check the carry out of the shift operation?
 		}
 	}
 
@@ -94,15 +93,19 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 			break;
 		case sub:
 			result = operand_1 - operand_2;
-			//set c_bit reminder
+			//set c_bit if operand_2 is bigger than operand_1 which means overflow
+			c_bit = operand_2 > operand_1 ? 1 : 0;
 			break;
 		case rsb:
 			result = operand_2 - operand_1;
-			//set c_bit reminder
+			//set c_bit if overflow
+			c_bit = operand_1 > operand_2 ? 1 : 0;
 			break;
 		case add:
 			result = operand_1 + operand_2;
-			//set c_bit reminder
+			//If operand_1 + operand_2 overflows, set c_bit = 1
+			uint64_t overflow_check = operand_1 + operand_2;
+			c_bit = overflow_check >= (((uint64_t) 1) << 32) ? 1 : 0;
 			break;
 		case tst:
 			result = operand_1 & operand_2;
@@ -115,14 +118,15 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 		case cmp:
 			result = operand_1 - operand_2;
 			write_result = 0;
-			//set c_bit reminder
+			//If operand_2 > operand_1, then there will be a overflow from the subtraction
+			c_bit = operand_2 > operand_1 ? 1 : 0;
 			break;
 		case orr:
 			result = operand_1 | operand_2;
 			break;
 		case mov:
 			result = operand_2;
-			break
+			break;
 		default:
 			//Opcode should not enter this default area - means error
 			exit(EXIT_FAILURE);
@@ -140,8 +144,7 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 		//C bit (bit 29 of CPSR) - set to c_bit which is determined by the opcode:
 		*(cpu_state->registers + CPSR) = *(cpu_state->registers + CPSR) | ((c_bit & 1) << 29);
 
-		//Z bit (bit 30 of CPSR):
-		//Z is 1 iff result == 0
+		//Z bit (bit 30 of CPSR) - Z is 1 iff result == 0:
 		if (result == 0) {
 			*(cpu_state->registers + CPSR) = *(cpu_state->registers + CPSR) | (1 << 30);
 		} else {
@@ -150,22 +153,30 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 
 		//N bit (bit 31 of CPSR) - set to bit 31 of result:
 		*(cpu_state->registers + CPSR) = *(cpu_state->registers + CPSR) | ((1 << 31) & result);
-
 	}
 }
 
+//Performs rotate right on operand by rotate_amount times and returns the result
 uint32_t rotate_right(uint32_t operand, uint32_t rotate_amount) {
-	
+	uint32_t result;
+	result = operand >> rotate_amount;
+	//loop the least significant bits round to the most significant:
+	result = result | (operand << (31 - rotate_amount));
+	return result;
 }
 
-uint32_t logical_left(uint32_t operand, uint32_t shift_amount) {
-
-}
-
-uint32_t logical_right(uint32_t operand, uint32_t shift_amount) {
-
-}
-
-uint32_t arithmetic_right(uint32_t operand, uint32_t shift_amount) {
-
+//Performs arithmetic shift right on operand by shift_amount times and returns the result
+uint32_t arithmetic_shift_right(uint32_t operand, uint32_t shift_amount) {
+	uint32_t result;
+	//If MSB of operand is 1
+	if ((1 << 31) & operand) {
+		result = operand >> shift_amount;
+		//sign extension in for loop
+		for (int i = 0; i < shift_amount; i++) {
+			result = result | (1 << (31 - i));
+		}
+	} else {
+		result = operand >> shift_amount;
+	}
+	return result;
 }
