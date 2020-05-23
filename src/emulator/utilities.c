@@ -40,8 +40,6 @@ uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos){
     res &= mask;
     // shifts result to the beginning for convenience
     res >>= start_pos;
-  //  printf("res:  ");
-   // print_bits_32(res);
     return res;
 }
 
