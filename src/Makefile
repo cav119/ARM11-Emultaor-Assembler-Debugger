@@ -1,5 +1,5 @@
 CC      = gcc
-CFLAGS  = -Wall -g -D_POSIX_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE -std=c99 -Werror -pedantic
+CFLAGS  = -Wall -g -D_POSIX_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE -std=c99 -pedantic
 
 EMULATOR_SOURCE = emulator/utilities.c emulator/cpu_state.c emulator/pipeline.c
 

@@ -17,10 +17,14 @@ void print_first_instruction(CpuState *cpu_state) {
 	uint8_t byte3 = cpu_state->memory[1];
 	uint8_t byte4 = cpu_state->memory[0];
 
-	printf("First instruction is: %.2x %.2x %.2x %.2x\n", byte1, byte2, byte3, byte4);
+	printf("First truction is: %.2x %.2x %.2x %.2x\n", byte1, byte2, byte3, byte4);
 }
 
 int main(int argc, char *argv[]) {
+	//some random MULTIPLY instruction
+	uint32_t instr = 150994944;
+	Instruction *ip = decode_instruction(instr); 
+	printf("%s\n", instr_to_string(ip->type));	
 	assert(argc == 2);
 	printf("%s\n", argv[1]);
 
