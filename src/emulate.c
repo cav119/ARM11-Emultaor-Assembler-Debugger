@@ -21,7 +21,8 @@ void print_first_instruction(CpuState *cpu_state) {
 }
 
 int main(int argc, char *argv[]) {
-	uint32_t instr = 80;
+	//some random MULTIPLY instruction
+	uint32_t instr = 150994944;
 	Instruction *ip = decode_instruction(instr); 
 	printf("%s\n", instr_to_string(ip->type));	
 	assert(argc == 2);
