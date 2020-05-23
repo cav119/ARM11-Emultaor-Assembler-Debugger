@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "utilities.h"
-
+#include "pipeline.h"
 
 void print_error_exit(char error_msg[]) {
 	printf("%s\n", error_msg);
@@ -50,3 +50,18 @@ void check_ptr_not_null(void *ptr, char error_msg[]) {
 		print_error_exit(error_msg);
 	}
 }
+char *instr_to_string(instruction_type type){
+	switch (type){
+		case data_process:
+			return "DATA_PROCESS";
+		case multiply: 
+			return "MULTIPLY";
+		case single_data_transfer:
+			return "SINGLE_DATA_TRANSFER";
+		case branch:
+			return "BRANCH";	
+		default:
+			return "WRONG_INPUT";
+	}
+}
+

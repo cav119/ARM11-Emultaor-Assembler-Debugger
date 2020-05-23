@@ -1,6 +1,6 @@
 #ifndef PIPELINE_H
 #define PIPELINE_H
-
+#include "cpu_state.h"
 // instruction_type enum
 typedef enum {
 	data_process,
