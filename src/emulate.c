@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <string.h>
 #include <assert.h>
 
 #include "emulator/cpu_state.h"
@@ -21,10 +20,12 @@ void print_first_instruction(CpuState *cpu_state) {
 }
 
 int main(int argc, char *argv[]) {
-	//some random MULTIPLY instruction
-	uint32_t instr = 150994944;
-	Instruction *ip = decode_instruction(instr); 
-	printf("%s\n", instr_to_string(ip->type));	
+    setbuf(stdout, 0);
+    uint32_t instr = 0xe3a02002;
+    print_bits_32(instr);
+    Instruction *ip = decode_instruction(instr);
+    printf("%s\n", instr_to_string(ip->type));
+
 	assert(argc == 2);
 	printf("%s\n", argv[1]);
 

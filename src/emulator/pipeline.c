@@ -9,21 +9,21 @@ void start_pipeline(CpuState *cpu_state) {
 }
 
 bool is_branch_instr(uint32_t bits){
-	// bits 27-24 (7-4 on l. endian) are 1010 (0101 little endian) 
-	return process_mask(bits, 4, 7) == 5;	
+	// bits 27-24  are 1010
+	return process_mask(bits, 24, 27) == 10;
 }	
 
 bool is_multiply_instr(uint32_t bits){
-	// bits 27-22 (4-9 little endian) are all 0
-	bool top_bits_zero = process_mask(bits, 4, 9) == 0;
-	// bits 7-4 (27-24  little endian) are 1001 (1001 little endian) 
-	bool lower_bits = process_mask(bits, 24, 27) == 9;
+	// bits 27-22  are all 0
+	bool top_bits_zero = process_mask(bits, 22, 27) == 0;
+	// bits 7-4  are 1001
+	bool lower_bits = process_mask(bits, 4, 7) == 9;
 	return top_bits_zero && lower_bits;
 }
 
 bool is_single_data_transfer_instr(uint32_t bits){
-	// bits 27-26 (4-5 little endian) are 01 (10 little endian)
-	return process_mask(bits, 4, 5) == 2; 
+	// bits 27-26 ) are 01
+	return process_mask(bits, 26, 27) == 1;
 }
 
 Instruction *decode_instruction(uint32_t bits){ 
