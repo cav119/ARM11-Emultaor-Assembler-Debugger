@@ -4,6 +4,7 @@
 #include "utilities.h"
 #include "pipeline.h"
 
+
 void print_error_exit(char error_msg[]) {
 	printf("%s\n", error_msg);
 	exit(EXIT_FAILURE);
@@ -61,5 +62,28 @@ char *instr_to_string(instruction_type type){
 		default:
 			return "WRONG_INPUT";
 	}
+}
+
+bool check_CPSR_cond(uint8_t cond, CpuState* cpu_state){
+    switch (cond){
+        case 0:
+            return get_flag(cpu_state, Z);
+        case 1:
+            return !get_flag(cpu_state, Z);
+        case 10:
+            return get_flag(cpu_state, N) == get_flag(cpu_state, V);
+        case 11:
+            return get_flag(cpu_state, N ) != get_flag(cpu_state, V);
+        case 12:
+            return !get_flag(cpu_state, Z) &&
+                    (get_flag(cpu_state, N) == get_flag(cpu_state, V));
+        case 13:
+            return get_flag(cpu_state, Z) ||
+            (get_flag(cpu_state, N ) != get_flag(cpu_state, V));
+        case 14:
+            return true;
+        default:
+            print_error_exit("Undefined CPSR condition");
+    }
 }
 

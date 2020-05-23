@@ -1,8 +1,10 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "pipeline.h"
+#include "cpu_state.h"
 
 #define MEMORY_SIZE 65536
 #define NUM_REGISTERS 17
@@ -21,6 +23,8 @@ uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos);
 char* instr_to_string(instruction_type type);
 // Checks if a pointer is defined. Otherwise, prints message and exits
 void check_ptr_not_null(void *ptr, char error_msg[]);
+
+bool check_CPSR_cond(uint8_t cond, CpuState* cpu_state);
 
 
 #endif
