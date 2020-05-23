@@ -25,5 +25,8 @@ void print_registers(CpuState *cpu_state);
 // Prints the current state of memory for debugging
 void print_memory(CpuState *cpu_state, int from, int to);
 
+//gets CPSR flag status
+bool get_flag(CpuState *cpuState, flag flag);
+
 
 #endif
