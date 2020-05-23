@@ -21,6 +21,7 @@ void print_first_instruction(CpuState *cpu_state) {
 }
 
 int main(int argc, char *argv[]) {
+    print_bits_32(process_mask(13, 1, 3));
 	assert(argc == 2);
 	printf("%s\n", argv[1]);
 
