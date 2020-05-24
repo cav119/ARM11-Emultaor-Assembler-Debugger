@@ -7,6 +7,7 @@
 #include "cpu_state.h"
 #include "pipeline.h"
 #include "utilities.h"
+#include "barrel_shifter.h"
 
 typedef enum {
     and = 0,
@@ -21,20 +22,6 @@ typedef enum {
     mov = 13
 } opcode_type;
 
-typedef enum {
-    lsl,
-    lsr,
-    asr,
-    ror
-} shift_op;
-
-
 void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr);
-
-//Performs arithmetic shift right on operand by shift_amount times and returns the result
-uint32_t arithmetic_shift_right(uint32_t operand, uint32_t shift_amount); 
-
-//Performs rotate right on operand by rotate_amount times and returns the result
-uint32_t rotate_right(uint32_t operand, uint32_t rotate_amount);
 
 #endif
