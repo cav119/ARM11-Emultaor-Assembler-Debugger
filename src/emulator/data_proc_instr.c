@@ -2,14 +2,14 @@
 
 void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
     //Assertions/checks
-    assert(instr->type = data_process);
+    assert(instr->type == data_process);
 
     //Variable definitions
     uint8_t immediate_enable_bit = process_mask(instr->code, 25, 25);
     uint8_t opcode = process_mask(instr->code, 21, 24);
     uint8_t cpsr_enable_bit = process_mask(instr->code, 20, 20);
     uint32_t operand_1 = 
-        *(cpu_state->registers + process_mask(instr->code, 16, 19));
+        cpu_state->registers[process_mask(instr->code, 16, 19)];
     uint8_t dest_register = process_mask(instr->code, 12, 15);
     uint32_t operand_2 = process_mask(instr->code, 0, 11);
     //result will be the computed result that is written into the dest_register
@@ -24,6 +24,7 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
         operand_2 = process_mask(instr->code, 0, 7);
         operand_2 = 
             rotate_right(operand_2, process_mask(instr->code, 8, 11) * 2);
+        c_bit = (operand_2 >> (process_mask(instr->code, 8, 11) * 2)) & 1;
     } else {
         operand_2 = reg_offset_shift(cpu_state, instr, &c_bit);
     }
@@ -79,7 +80,7 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 
     //Write to dest_register
     if (write_result) {
-        *(cpu_state->registers + dest_register) = result;
+        cpu_state->registers[dest_register] = result;
     }
 
     //CPSR FLAGS
@@ -87,21 +88,21 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
         //V bit unaffected
     
         //C bit (bit 29 CPSR) - set to c_bit which is determined by the opcode:
-        *(cpu_state->registers + CPSR) = 
-            *(cpu_state->registers + CPSR) | ((c_bit & 1) << 29);
+        cpu_state->registers[CPSR] = 
+            cpu_state->registers[CPSR] | ((c_bit & 1) << 29);
 
         //Z bit (bit 30 of CPSR) - Z is 1 iff result == 0:
         if (result == 0) {
-            *(cpu_state->registers + CPSR) = 
-                *(cpu_state->registers + CPSR) | (1 << 30);
+            cpu_state->registers[CPSR] = 
+                cpu_state->registers[CPSR] | (1 << 30);
         } else {
-            *(cpu_state->registers + CPSR) = 
-                *(cpu_state->registers + CPSR) ^ 
-                    (*(cpu_state->registers + CPSR) & (1 << 30));
+            cpu_state->registers[CPSR] = 
+                cpu_state->registers[CPSR] ^ 
+                    (cpu_state->registers[CPSR] & (1 << 30));
         }
 
         //N bit (bit 31 of CPSR) - set to bit 31 of result:
-        *(cpu_state->registers + CPSR) = 
-            *(cpu_state->registers + CPSR) | ((1 << 31) & result);
+        cpu_state->registers[CPSR] = 
+            cpu_state->registers[CPSR] | ((1 << 31) & result);
     }
 }
