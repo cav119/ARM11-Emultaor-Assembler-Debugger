@@ -9,6 +9,7 @@
 #include "utilities.h"
 
 typedef enum {
+<<<<<<< HEAD
     and = 0,
     eor = 1,
     sub = 2,
@@ -26,6 +27,25 @@ typedef enum {
     lsr,
     asr,
     ror
+=======
+	and = 0,
+	eor = 1,
+	sub = 2,
+	rsb = 3,
+	add = 4,
+	tst = 8,
+	teq = 9,
+	cmp = 10,
+	orr = 12,
+	mov = 13
+} opcode_type;
+
+typedef enum {
+	lsl,
+	lsr,
+	asr,
+	ror
+>>>>>>> 5b92d910369b3ea458b32055ab8a6e6b6c8b9606
 } shift_op;
 
 
