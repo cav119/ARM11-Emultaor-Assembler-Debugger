@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "cpu_state.h"
 #include "utilities.h"
 
+#define PC 15
 
 CpuState *cpu_state_init(void) {
 	CpuState *cpu_state = (CpuState *) malloc(sizeof(CpuState));
@@ -20,7 +20,7 @@ CpuState *cpu_state_init(void) {
 	uint8_t *allocated_memory = calloc(MEMORY_SIZE, sizeof(uint8_t));
 	check_ptr_not_null(allocated_memory, "Could not allocate and initialise RAM memory");
 	cpu_state->memory = (uint8_t *) allocated_memory;
-
+	// init of pipeline
 	return cpu_state;
 }
 
@@ -63,3 +63,21 @@ void print_memory(CpuState *cpu_state, int from, int to){
         printf("M[0x%.8x] = 0x%.8x\n", i, cpu_state->memory[i]);
     }
 }
+
+uint32_t *get_pc(CpuState *cpu_state){
+	return (cpu_state->registers) + PC;
+}
+
+uint32_t *offset_pc(int32_t offset, CpuState *cpu_state){
+	uint32_t *pc = get_pc(cpu_state); 
+	*pc = ((int32_t) *pc + offset);
+	return pc;
+}
+
+uint32_t *increment_pc(CpuState *cpu_state)
+{
+	uint32_t *pc = get_pc(cpu_state); 
+	*pc = *pc + 4;
+	return pc;
+}
+

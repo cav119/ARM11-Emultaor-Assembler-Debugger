@@ -28,5 +28,12 @@ void print_memory(CpuState *cpu_state, int from, int to);
 //gets CPSR flag status
 bool get_flag(CpuState *cpuState, flag flag);
 
+// make PC go go to instruction with offset
+uint32_t *offset_pc(int32_t offset, CpuState *cpu_state);
+
+// increments PC to next instruction (adding 4 bytes)
+uint32_t *increment_pc(CpuState *cpu_state);
+
+
 
 #endif

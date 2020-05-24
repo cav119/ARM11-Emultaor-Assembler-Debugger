@@ -16,15 +16,11 @@ void print_first_instruction(CpuState *cpu_state) {
 	uint8_t byte3 = cpu_state->memory[1];
 	uint8_t byte4 = cpu_state->memory[0];
 
-	printf("First truction is: %.2x %.2x %.2x %.2x\n", byte1, byte2, byte3, byte4);
+	printf("First instruction is: %.2x %.2x %.2x %.2x\n", byte1, byte2, byte3, byte4);
 }
 
 int main(int argc, char *argv[]) {
     setbuf(stdout, 0);
-    uint32_t instr = 0xe3a02002;
-    print_bits_32(instr);
-    Instruction *ip = decode_instruction(instr);
-    printf("%s\n", instr_to_string(ip->type));
 
 	assert(argc == 2);
 	printf("%s\n", argv[1]);
@@ -35,6 +31,7 @@ int main(int argc, char *argv[]) {
 
 	// Initialise the CpuState
 	CpuState *cpu_state = cpu_state_init();
+	// Initialise the pipeline
 
 	// Get file length by moving cursor to the end and return back to start
 	fseek(prog_file, 0, SEEK_END);                         
@@ -44,15 +41,21 @@ int main(int argc, char *argv[]) {
 	// Load program data into CPU memory, assuming it fits and close file
 	assert(file_length <= MEMORY_SIZE);                    
 	fread(cpu_state->memory, file_length, 1, prog_file); 
-	fclose(prog_file); 
+	fclose(prog_file);
+	
 
 	// Start execution of program
-	//start_pipeline(cpu_state);
+	start_pipeline(cpu_state);
 
 	// Print state of program for testing
     print_registers(cpu_state);
-	print_memory(cpu_state, 0, 16);
-	print_first_instruction(cpu_state);
+	print_memory(cpu_state, 0, file_length);
+
+	//prints all instructions and its type
+	printf("\n");
+    for (int p = 0; fetch(p, cpu_state) != 0; p+=4) {
+        printf("%.8x -> %s\n", fetch(p, cpu_state), instr_to_string(decode_instruction(fetch(p, cpu_state))->type));
+    }
 
 	cpu_state_free(cpu_state);
 
