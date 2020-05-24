@@ -7,6 +7,7 @@
 #include "pipeline.h"
 #include "utilities.h"
 
+//shift_op enum is used to specify which shift operation
 typedef enum {
     lsl,
     lsr,
