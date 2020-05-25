@@ -2,11 +2,15 @@
 #define PIPELINE_H
 #include "cpu_state.h"
 #include "pipeline_data.h"
+
+#include "multiply_instr.h"
+#include "branch_instr.h"
+
 Pipe *init_pipeline(CpuState *cpu_state);
 
 uint32_t fetch(uint32_t pointer, CpuState *cpuState);
 
-void execute(Instruction  *instruction, CpuState *cpuState);
+void execute(Instruction *instruction, CpuState *cpuState);
 
 // Starts the fetch-decode-execute process until finished
 void start_pipeline(CpuState *cpu_state);

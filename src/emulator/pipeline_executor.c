@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "utilities.h"
+#include "pipeline_executor.h"
+#include "pipeline_data.h"
 
 uint32_t fetch(uint32_t pointer, CpuState *cpuState){
     uint32_t code = 0;
@@ -41,7 +43,7 @@ bool is_multiply_instr(uint32_t bits){
 }
 
 bool is_single_data_transfer_instr(uint32_t bits){
-	// bits 27-26 ) are 01
+	// bits 27-26 are 01
 	return process_mask(bits, 26, 27) == 1;
 }
 
@@ -100,6 +102,7 @@ void end_pipeline(Pipe *pipe, CpuState *cpu_state){
     increment_pc(cpu_state);
     printf("\n PC = %d \n", cpu_state->registers[PC]);
     print_pipeline(pipe);
+    free(pipe);
     printf("\n\n");
 }
 
@@ -115,12 +118,12 @@ void execute(Instruction *instruction,CpuState *cpuState){
         case data_process:
             break;
         case multiply:
-          //  execute_multiply_instruction(instruction, cpuState);
+          //execute_multiply_instruction(instruction, cpuState);
             break;
         case single_data_transfer:
             break;
         case branch:
-         //   execute_branch_instr(instruction, cpuState);
+        // execute_branch_instr(instruction, cpuState);
             break;
     }
 }

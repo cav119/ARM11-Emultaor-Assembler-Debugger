@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include "utilities.h"
-#define PC 15
 
 
 void execute_branch_instr(Instruction* instr, CpuState *cpu_state){
@@ -15,17 +14,16 @@ void execute_branch_instr(Instruction* instr, CpuState *cpu_state){
 	offset <<= 2;
 	bool sign = process_mask(offset, 25, 25);
 	//uint32_t *pc = cpu_state->registers
-	uint32_t pc = cpu_state->registers[PC];
 	if (!sign){
 		// positive number, no need for more calc
-		pc = pc + offset;
 		// cpu_state_clear_pipeline();
+		offset_pc(offset, cpu_state);
 		return;
 	}	
 	// negative number, must sign extend
 	uint32_t mask = ((1 << 32) - 1) - ((1 << 26) - 1);
 	offset |= mask;
-	pc = ((int32_t) pc + offset);
+	offset_pc(offset, cpu_state);
 	// cpu_state_clear_pipeline();
 
 }
