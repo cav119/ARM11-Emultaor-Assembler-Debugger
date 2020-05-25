@@ -13,7 +13,6 @@ bool execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
         pipe->executing = 0x0;
         return false;
     }
-    // clearing pipeling because will jump
 
     // processing offset
     int32_t offset = (int32_t) OFFSET_BITS;
@@ -27,7 +26,6 @@ bool execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
         offset |= mask;
     }
     offset_pc(offset, cpu_state);
-    // negative number, must sign extend
     clear_pipe(pipe);
     pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
     return true;

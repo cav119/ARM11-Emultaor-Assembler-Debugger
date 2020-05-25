@@ -53,9 +53,10 @@ int main(int argc, char *argv[]) {
 
 	//prints all instructions and its type
 	printf("\n");
-    for (int p = 0; fetch(p, cpu_state) != 0; p+=4) {
+	// edited because it causes a memory leak
+    /*for (int p = 0; fetch(p, cpu_state) != 0; p+=4) {
         printf("%.8x -> %s\n", fetch(p, cpu_state), instr_to_string(decode_instruction(fetch(p, cpu_state))->type));
-    }
+    }*/
 
 	cpu_state_free(cpu_state);
 
