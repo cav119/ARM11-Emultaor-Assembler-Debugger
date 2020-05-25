@@ -26,9 +26,6 @@ Pipe *init_pipeline(CpuState *cpu_state){
 }
 
 
-
-
-
 bool is_branch_instr(uint32_t bits){
 	// bits 27-24  are 1010
 	return process_mask(bits, 24, 27) == 10;
@@ -67,7 +64,6 @@ Instruction *decode_instruction(uint32_t bits){
 }
 
 void start_pipeline(CpuState *cpu_state) {
-
     Pipe *pipe = init_pipeline(cpu_state);
 
     while (pipe->fetching){
@@ -75,20 +71,20 @@ void start_pipeline(CpuState *cpu_state) {
         printf("\n PC = %d \n", cpu_state->registers[PC]);
         print_pipeline(pipe);
 
-      //  exit(EXIT_SUCCESS);
         pipe->executing = pipe->decoding;
 
-        if (pipe->executing) {execute(pipe->executing,cpu_state);}
-        if (pipe->fetching) {pipe->decoding = decode_instruction(pipe->fetching);}
-       //pipe->decoding = decode_instruction(pipe->fetching);
+        if (pipe->executing) {
+            execute(pipe->executing,cpu_state);
+        }
+        if (pipe->fetching) {
+            pipe->decoding = decode_instruction(pipe->fetching);
+        }
+        
         pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
         increment_pc(cpu_state);
-
     }
 
     end_pipeline(pipe, cpu_state);
-
-    // TODO: fetch decode execute loop
 }
 
 void end_pipeline(Pipe *pipe, CpuState *cpu_state){
@@ -107,10 +103,7 @@ void end_pipeline(Pipe *pipe, CpuState *cpu_state){
 }
 
 
-
-
-
-void execute(Instruction *instruction,CpuState *cpuState){
+void execute(Instruction *instruction, CpuState *cpuState){
     if (!(check_CPSR_cond(process_mask(instruction->code, 28, 31), cpuState))){
         return;
     }
@@ -118,12 +111,12 @@ void execute(Instruction *instruction,CpuState *cpuState){
         case data_process:
             break;
         case multiply:
-          //execute_multiply_instruction(instruction, cpuState);
+            execute_multiply_instruction(instruction, cpuState);
             break;
         case single_data_transfer:
             break;
         case branch:
-        // execute_branch_instr(instruction, cpuState);
+            execute_branch_instr(instruction, cpuState);
             break;
     }
 }

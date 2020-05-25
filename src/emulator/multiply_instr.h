@@ -3,6 +3,7 @@
 #include "pipeline_data.h"
 #include <stdbool.h>
 
+// Executes a multiply type instruction
 void execute_multiply_instruction(Instruction *instruction, CpuState *cpuState);
 
 #endif
