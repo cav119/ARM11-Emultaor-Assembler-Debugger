@@ -47,7 +47,8 @@ uint16_t compute_offset(CpuState *cpu_state, Instruction *instr) {
     uint16_t offset;
     if (IMMEDIATE_BIT) {
         // Register shifted offset (as in data processing type instructions)
-        uint8_t *carry = 0;
+        uint8_t *carry;
+        *carry = 0;
         offset = reg_offset_shift(cpu_state, instr, carry);
     } else {
         offset = OFFSET_BITS;
