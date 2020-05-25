@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "single_data_transfer_instr.h"
 #include "utilities.h"
+#include "barrel_shifter.h"
 
 #define IMMEDIATE_BIT process_mask(instr->code, 25, 25)
 #define INDEXING_BIT process_mask(instr->code, 24, 24)
@@ -19,7 +20,7 @@ void execute_single_data_transfer_instr(CpuState *cpu_state, Instruction *instr)
     //     assert(cpu_state->registers[PC] == cpu_state->memory[cpu_state->registers[PC]] + 8);
     // }
 
-    uint16_t offset = compute_offset(instr);
+    uint16_t offset = compute_offset(cpu_state, instr);
     uint32_t address = compute_address(cpu_state, instr, offset);
 
     assert(TRANSFER_REG_BITS < NUM_REGISTERS);
@@ -42,13 +43,13 @@ void execute_single_data_transfer_instr(CpuState *cpu_state, Instruction *instr)
 
 }
 
-uint16_t compute_offset(Instruction *instr) {
+uint16_t compute_offset(CpuState *cpu_state, Instruction *instr) {
     uint16_t offset;
     if (IMMEDIATE_BIT) {
-        // USE SHIFTED REGISTER OFFSET FROM DATA PROCESSING INSTRUCTION
-        // need to merge with data_processing_instr branch
+        // Register shifted offset (as in data processing type instructions)
+        uint8_t *carry = 0;
+        offset = reg_offset_shift(cpu_state, instr, carry);
     } else {
-        // barrelshifter
         offset = OFFSET_BITS;
     }
     // printf("Offset: %d\n", offset);
