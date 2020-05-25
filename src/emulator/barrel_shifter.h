@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "cpu_state.h"
-#include "pipeline.h"
+#include "pipeline_data.h"
 #include "utilities.h"
 
 //shift_op enum is used to specify which shift operation

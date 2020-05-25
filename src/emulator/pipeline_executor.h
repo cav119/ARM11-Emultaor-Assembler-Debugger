@@ -5,6 +5,8 @@
 
 #include "multiply_instr.h"
 #include "branch_instr.h"
+#include "single_data_transfer_instr.h"
+#include "data_proc_instr.h"
 
 Pipe *init_pipeline(CpuState *cpu_state);
 

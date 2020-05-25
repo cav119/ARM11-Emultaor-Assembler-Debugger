@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "cpu_state.h"
-#include "pipeline.h"
+#include "pipeline_data.h"
 #include "utilities.h"
 #include "barrel_shifter.h"
 

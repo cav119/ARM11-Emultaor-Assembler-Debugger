@@ -48,6 +48,7 @@ uint16_t compute_offset(Instruction *instr) {
         // USE SHIFTED REGISTER OFFSET FROM DATA PROCESSING INSTRUCTION
         // need to merge with data_processing_instr branch
     } else {
+        // barrelshifter
         offset = OFFSET_BITS;
     }
     // printf("Offset: %d\n", offset);

@@ -124,6 +124,7 @@ bool execute(Instruction *instruction, CpuState *cpuState, Pipe* pipe){
     switch (instruction->type) {
         case data_process:
             //freeing instruction
+            execute_data_processing_instr(cpuState, instruction);
             free(instruction);
             pipe->executing = 0x0;
             break;
@@ -134,6 +135,7 @@ bool execute(Instruction *instruction, CpuState *cpuState, Pipe* pipe){
             free(instruction);
             break;
         case single_data_transfer:
+            execute_single_data_transfer_instr(cpuState, instruction);
             free(instruction);
             pipe->executing = 0x0;
             break;
