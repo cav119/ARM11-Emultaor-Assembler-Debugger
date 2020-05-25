@@ -6,12 +6,12 @@
 #include "pipeline.h"
 
 // Executes a Single Data Transfer type instruction
-void single_data_transfer_instr_execute(CpuState *cpu_state, Instruction *instr);
+void execute_single_data_transfer_instr(CpuState *cpu_state, Instruction *instr);
 
 // Computes the offset for the address
 uint16_t compute_offset(Instruction *instr);
 
-// Computes the memory address to be used for the transfer
+// Computes the memory address to be used for the transfer given the offset
 uint32_t compute_address(CpuState *cpu_state, Instruction *instr, uint16_t offset);
 
 #endif
