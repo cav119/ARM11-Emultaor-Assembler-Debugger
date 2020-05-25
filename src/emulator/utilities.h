@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "pipeline.h"
 #include "cpu_state.h"
+#include "pipeline_data.h"
 
 #define MEMORY_SIZE 65536
 #define NUM_REGISTERS 17
