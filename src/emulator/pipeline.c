@@ -3,10 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "utilities.h"
-#include "multiply_instr.h"
-#include "branch_instr.h"
-#include "single_data_transfer.h"
-#include "data_proc_instr.h"
+
 
 
 Pipe *init_pipeline(CpuState *cpu_state){
@@ -112,12 +109,12 @@ void execute(Instruction *instruction,CpuState *cpuState){
         case data_process:
             break;
         case multiply:
-            execute_multiply_instruction(instruction, cpuState);
+            //execute_multiply_instruction(instruction, cpuState);
             break;
         case single_data_transfer:
             break;
         case branch:
-            execute_branch_instr(instruction, cpuState);
+           // execute_branch_instr(instruction, cpuState);
             break;
     }
 }
