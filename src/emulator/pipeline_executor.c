@@ -72,14 +72,17 @@ void start_pipeline(CpuState *cpu_state) {
         print_pipeline(pipe);
 
         pipe->executing = pipe->decoding;
-
+        if (pipe->fetching == 0x0){
+            // Halt
+            end_pipeline(pipe, cpu_state);
+            return;
+        }
+        pipe->decoding = decode_instruction(pipe->fetching);
+        // TODO: check if a branch was decoded and if the branch succeeded
         if (pipe->executing) {
-            execute(pipe->executing,cpu_state);
+            execute(pipe->executing,cpu_state, pipe);
         }
-        if (pipe->fetching) {
-            pipe->decoding = decode_instruction(pipe->fetching);
-        }
-        
+
         pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
         increment_pc(cpu_state);
     }
@@ -88,22 +91,26 @@ void start_pipeline(CpuState *cpu_state) {
 }
 
 void end_pipeline(Pipe *pipe, CpuState *cpu_state){
-    printf("\n PC = %d \n", cpu_state->registers[PC]);
+    // Must have decoded a halt
     print_pipeline(pipe);
-
-    pipe->executing = pipe->decoding;
-    execute(pipe->executing, cpu_state);
-
-    pipe->decoding = decode_instruction(pipe->fetching);
+    if (pipe->executing != NULL) {
+        // if it decodes a halt is it ok to execute a command? what if it is a branch command?
+        //execute(pipe->executing, cpu_state, pipe);
+        free(pipe->executing);
+    }
+    if (pipe->decoding != NULL){
+        free(pipe->decoding);
+    }
     increment_pc(cpu_state);
     printf("\n PC = %d \n", cpu_state->registers[PC]);
     print_pipeline(pipe);
+
     free(pipe);
     printf("\n\n");
 }
 
 
-void execute(Instruction *instruction, CpuState *cpuState){
+void execute(Instruction *instruction, CpuState *cpuState, Pipe* pipe){
     if (!(check_CPSR_cond(process_mask(instruction->code, 28, 31), cpuState))){
         return;
     }
@@ -116,9 +123,10 @@ void execute(Instruction *instruction, CpuState *cpuState){
         case single_data_transfer:
             break;
         case branch:
-            execute_branch_instr(instruction, cpuState);
+            execute_branch_instr(instruction, cpuState, pipe);
             break;
     }
+
 }
 
 void print_pipeline(Pipe *pipe){
@@ -128,7 +136,13 @@ void print_pipeline(Pipe *pipe){
 }
 
 void clear_pipe(Pipe *pipe){
-    // clears the whole pipeline after a branch instr
+    // clears the whole pipeline after a branch inst
+    if (pipe->executing != NULL){
+        free(pipe->executing);
+    }
+    if (pipe->decoding != NULL){
+        free(pipe->decoding);
+    }
     pipe->executing = 0x0;
     pipe->decoding = 0x0;
     pipe->fetching = 0x0;
