@@ -79,12 +79,19 @@ void start_pipeline(CpuState *cpu_state) {
         }
         pipe->decoding = decode_instruction(pipe->fetching);
         // TODO: check if a branch was decoded and if the branch succeeded
-        if (pipe->executing) {
-            execute(pipe->executing,cpu_state, pipe);
-        }
 
-        pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
-        increment_pc(cpu_state);
+        bool branch_instr_succeeded = false;
+        if (pipe->executing) {
+            instruction_type type = pipe->executing->type;
+            bool succeeded = execute(pipe->executing,cpu_state, pipe);
+            if (succeeded && type == branch){
+                branch_instr_succeeded = true;
+            }
+        }
+        if (!branch_instr_succeeded) {
+            pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
+            increment_pc(cpu_state);
+        }
     }
 
     end_pipeline(pipe, cpu_state);
@@ -110,21 +117,29 @@ void end_pipeline(Pipe *pipe, CpuState *cpu_state){
 }
 
 
-void execute(Instruction *instruction, CpuState *cpuState, Pipe* pipe){
+bool execute(Instruction *instruction, CpuState *cpuState, Pipe* pipe){
     if (!(check_CPSR_cond(process_mask(instruction->code, 28, 31), cpuState))){
-        return;
+        return false;
     }
     switch (instruction->type) {
         case data_process:
+            //freeing instruction
+            free(instruction);
+            pipe->executing = 0x0;
             break;
         case multiply:
+            // free instruction
             execute_multiply_instruction(instruction, cpuState);
+            pipe->executing = 0x0;
+            free(instruction);
             break;
         case single_data_transfer:
+            free(instruction);
+            pipe->executing = 0x0;
             break;
         case branch:
-            execute_branch_instr(instruction, cpuState, pipe);
-            break;
+            // no need to free instruction because branch handles it
+            return execute_branch_instr(instruction, cpuState, pipe);
     }
 
 }

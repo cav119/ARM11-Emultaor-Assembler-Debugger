@@ -10,7 +10,7 @@ Pipe *init_pipeline(CpuState *cpu_state);
 
 uint32_t fetch(uint32_t pointer, CpuState *cpuState);
 
-void execute(Instruction *instruction, CpuState *cpuState, Pipe* pipe);
+bool execute(Instruction *instruction, CpuState *cpuState, Pipe* pipe);
 
 // Starts the fetch-decode-execute process until finished
 void start_pipeline(CpuState *cpu_state);

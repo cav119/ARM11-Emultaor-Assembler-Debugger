@@ -1,13 +1,17 @@
 #include <stdint.h>
 #include "utilities.h"
+#include <stdlib.h>
 #include "pipeline_executor.h"
 #define CONDITION_BITS process_mask(instr->code, 28, 31)
 #define OFFSET_BITS process_mask(instr->code, 0, 23)
 
-void execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
+
+bool execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
 
     if (!check_CPSR_cond(CONDITION_BITS, cpu_state)) {
-        return;
+        free(instr);
+        pipe->executing = 0x0;
+        return false;
     }
     // clearing pipeling because will jump
 
@@ -26,5 +30,5 @@ void execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
     // negative number, must sign extend
     clear_pipe(pipe);
     pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
-
+    return true;
 }
