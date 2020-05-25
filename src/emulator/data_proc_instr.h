@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "cpu_state.h"
 #include "pipeline.h"
 #include "utilities.h"

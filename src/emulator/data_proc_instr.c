@@ -1,5 +1,6 @@
 #include "data_proc_instr.h"
 
+//Assumes that the instr provided has the code in little endian
 void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
     //Assertions/checks
     assert(instr->type == data_process);
@@ -50,7 +51,7 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
         case add:
             result = operand_1 + operand_2;
             //If operand_1 + operand_2 overflows, set c_bit = 1
-            uint64_t overflow_check = operand_1 + operand_2;
+            uint64_t overflow_check = ((uint64_t) operand_1) + ((uint64_t) operand_2);
             c_bit = overflow_check >= (((uint64_t) 1) << 32) ? 1 : 0;
             break;
         case tst:
@@ -75,6 +76,7 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
             break;
         default:
             //Opcode should not enter this default area - means error
+            printf("Opcode specified does not exist.");
             exit(EXIT_FAILURE);
     }
 
@@ -88,21 +90,16 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
         //V bit unaffected
     
         //C bit (bit 29 CPSR) - set to c_bit which is determined by the opcode:
-        cpu_state->registers[CPSR] = 
-            cpu_state->registers[CPSR] | ((c_bit & 1) << 29);
+        set_flag(cpu_state, C, (bool) c_bit);
 
         //Z bit (bit 30 of CPSR) - Z is 1 iff result == 0:
         if (result == 0) {
-            cpu_state->registers[CPSR] = 
-                cpu_state->registers[CPSR] | (1 << 30);
+            set_flag(cpu_state, Z, true);
         } else {
-            cpu_state->registers[CPSR] = 
-                cpu_state->registers[CPSR] ^ 
-                    (cpu_state->registers[CPSR] & (1 << 30));
+            set_flag(cpu_state, Z, false);
         }
 
         //N bit (bit 31 of CPSR) - set to bit 31 of result:
-        cpu_state->registers[CPSR] = 
-            cpu_state->registers[CPSR] | ((1 << 31) & result);
+        set_flag(cpu_state, N, (bool) process_mask(result, 31, 31));
     }
 }
