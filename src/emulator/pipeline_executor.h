@@ -1,27 +1,7 @@
 #ifndef PIPELINE_H
 #define PIPELINE_H
 #include "cpu_state.h"
-
-// instruction_type enum
-typedef enum {
-	data_process,
-	multiply,
-	single_data_transfer,
-	branch
-} instruction_type;
-
-// Instruction struct
-typedef struct {
-	uint32_t code;
-	instruction_type type;	
-} Instruction;
-
-typedef struct {
-    Instruction *executing;
-    Instruction *decoding;
-    uint32_t fetching;
-} Pipe;
-
+#include "pipeline_data.h"
 Pipe *init_pipeline(CpuState *cpu_state);
 
 uint32_t fetch(uint32_t pointer, CpuState *cpuState);

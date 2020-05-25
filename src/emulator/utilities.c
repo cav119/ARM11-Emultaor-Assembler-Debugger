@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "utilities.h"
-#include "pipeline.h"
 
 
 void print_error_exit(char error_msg[]) {

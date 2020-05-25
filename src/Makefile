@@ -1,7 +1,7 @@
 CC      = gcc
 CFLAGS  = -Wall -g -D_POSIX_SOURCE -D_DEFAULT_SOURCE -D_BSD_SOURCE -std=c99 -pedantic
 
-EMULATOR_SOURCE = emulator/utilities.c emulator/cpu_state.c emulator/pipeline.c
+EMULATOR_SOURCE = emulator/utilities.c emulator/cpu_state.c emulator/pipeline_executor.c
 
 
 .SUFFIXES: .c .o

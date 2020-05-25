@@ -6,8 +6,8 @@
 
 #include "emulator/cpu_state.h"
 #include "emulator/utilities.h"
-#include "emulator/pipeline.h"
-
+#include "emulator/pipeline_executor.h"
+#include "emulator/pipeline_data.h"
 
 // prints first instruction (little endian) as a test
 void print_first_instruction(CpuState *cpu_state) {
