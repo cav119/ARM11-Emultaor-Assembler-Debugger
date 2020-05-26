@@ -64,17 +64,12 @@ Instruction *decode_instruction(uint32_t bits){
 
 void start_pipeline(CpuState *cpu_state) {
     Pipe *pipe = init_pipeline(cpu_state);
-
+    continue_pipe:
     while (pipe->fetching){
 
         //printf("\n PC = %d \n", cpu_state->registers[PC]);
 
         pipe->executing = pipe->decoding;
-        if (pipe->fetching == 0x0){
-            // Halt
-            end_pipeline(pipe, cpu_state);
-            return;
-        }
         pipe->decoding = decode_instruction(pipe->fetching);
         // TODO: check if a branch was decoded and if the branch succeeded
 
@@ -89,25 +84,36 @@ void start_pipeline(CpuState *cpu_state) {
         if (!branch_instr_succeeded) {
             pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
             increment_pc(cpu_state);
+            if (pipe->fetching == 0){
+                // MUST HAVE HIT A HALT
+                increment_pc(cpu_state);
+                pipe->executing = pipe->decoding;
+                pipe->decoding = 0;
+                pipe->fetching = 0;
+            }
         }
     }
 
-    end_pipeline(pipe, cpu_state);
+    bool ended = end_pipeline(pipe, cpu_state);
+    if (!ended){
+        goto continue_pipe;
+    }
 }
 
-void end_pipeline(Pipe *pipe, CpuState *cpu_state){
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state){
     // Must have decoded a halt
     if (pipe->executing != NULL) {
         // if it decodes a halt is it ok to execute a command? what if it is a branch command?
-        execute(pipe->executing, cpu_state, pipe);
+        instruction_type type = pipe->executing->type;
+        bool succeeded = execute(pipe->executing, cpu_state, pipe);
+        if (type == branch && succeeded){
+            return false;
+        }
     }
-    if (pipe->decoding != NULL){
-	    execute(pipe->decoding, cpu_state, pipe);
-    }
-    increment_pc(cpu_state);
     //printf("\n PC = %d \n", cpu_state->registers[PC]);
 
     free(pipe);
+    return true;
 }
 
 
