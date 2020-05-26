@@ -23,7 +23,7 @@ void execute_single_data_transfer_instr(CpuState *cpu_state, Instruction *instr)
     uint16_t offset = compute_offset(cpu_state, instr);
     uint32_t address = compute_address(cpu_state, instr, offset);
 
-    if (address <= MEMORY_SIZE - 4) {
+    if (address >= MEMORY_SIZE - 4) {
         print_error_exit("Out of bounds memory access.");
     }
     assert(TRANSFER_REG_BITS < NUM_REGISTERS);

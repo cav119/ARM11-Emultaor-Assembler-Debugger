@@ -28,5 +28,6 @@ bool execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
     offset_pc(offset, cpu_state);
     clear_pipe(pipe);
     pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
+    increment_pc(cpu_state);
     return true;
 }
