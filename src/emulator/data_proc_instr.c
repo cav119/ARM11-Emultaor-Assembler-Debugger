@@ -41,12 +41,12 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
         case sub:
             result = operand_1 - operand_2;
             //set c_bit if operand_2 > operand_1 which means overflow
-            c_bit = operand_2 > operand_1 ? 1 : 0;
+            c_bit = operand_2 > operand_1 ? 0 : 1;
             break;
         case rsb:
             result = operand_2 - operand_1;
             //set c_bit if overflow
-            c_bit = operand_1 > operand_2 ? 1 : 0;
+            c_bit = operand_1 > operand_2 ? 0 : 1;
             break;
         case add:
             result = operand_1 + operand_2;
@@ -66,7 +66,7 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
             result = operand_1 - operand_2;
             write_result = 0;
             //If operand_2 > operand_1, then overflow from the subtraction
-            c_bit = operand_2 > operand_1 ? 1 : 0;
+            c_bit = operand_2 > operand_1 ? 0 : 1;
             break;
         case orr:
             result = operand_1 | operand_2;
@@ -90,16 +90,16 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
         //V bit unaffected
     
         //C bit (bit 29 CPSR) - set to c_bit which is determined by the opcode:
-        set_flag(cpu_state, C, (bool) c_bit);
+        set_CPSR_flag(cpu_state, C, (bool) c_bit);
 
         //Z bit (bit 30 of CPSR) - Z is 1 iff result == 0:
         if (result == 0) {
-            set_flag(cpu_state, Z, true);
+            set_CPSR_flag(cpu_state, Z, true);
         } else {
-            set_flag(cpu_state, Z, false);
+            set_CPSR_flag(cpu_state, Z, false);
         }
 
         //N bit (bit 31 of CPSR) - set to bit 31 of result:
-        set_flag(cpu_state, N, (bool) process_mask(result, 31, 31));
+        set_CPSR_flag(cpu_state, N, (bool) process_mask(result, 31, 31));
     }
 }
