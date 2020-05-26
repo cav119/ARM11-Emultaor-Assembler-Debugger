@@ -66,7 +66,6 @@ void start_pipeline(CpuState *cpu_state) {
     Pipe *pipe = init_pipeline(cpu_state);
     continue_pipe:
     while (pipe->fetching){
-
         //printf("\n PC = %d \n", cpu_state->registers[PC]);
 
         pipe->executing = pipe->decoding;
@@ -84,16 +83,8 @@ void start_pipeline(CpuState *cpu_state) {
         if (!branch_instr_succeeded) {
             pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
             increment_pc(cpu_state);
-            if (pipe->fetching == 0){
-                // MUST HAVE HIT A HALT
-                increment_pc(cpu_state);
-                pipe->executing = pipe->decoding;
-                pipe->decoding = 0;
-                pipe->fetching = 0;
-            }
         }
     }
-
     bool ended = end_pipeline(pipe, cpu_state);
     if (!ended){
         goto continue_pipe;
@@ -101,15 +92,27 @@ void start_pipeline(CpuState *cpu_state) {
 }
 
 bool end_pipeline(Pipe *pipe, CpuState *cpu_state){
-    // Must have decoded a halt
+    // Must have fetched a halt
+    // since it stops when fetching a halt the block of code simulates executing 2 cycles
+    // first executing pipe->executing, and then pipe->decoding
     if (pipe->executing != NULL) {
-        // if it decodes a halt is it ok to execute a command? what if it is a branch command?
+        // fetched a HALTH, must execute executing and then decoding
         instruction_type type = pipe->executing->type;
         bool succeeded = execute(pipe->executing, cpu_state, pipe);
         if (type == branch && succeeded){
             return false;
         }
+        increment_pc(cpu_state);
+    } else {
+        if (pipe->decoding != NULL){
+            instruction_type type = pipe->decoding->type;
+            bool succeeded = execute(pipe->decoding, cpu_state, pipe);
+            if (type == branch && succeeded){
+                return false;
+            }
+        }
     }
+    increment_pc(cpu_state);
     //printf("\n PC = %d \n", cpu_state->registers[PC]);
 
     free(pipe);
