@@ -49,8 +49,12 @@ bool get_flag(CpuState *cpuState, flag flag){
 // DEBUGGING, should probably move to utilities.c later
 
 void print_registers(CpuState *cpu_state){
+    printf("Registers:\n");
 	for (int i = 0; i < NUM_REGISTERS; i++){
 		uint32_t val = cpu_state->registers[i];
+		if (i == 13 || i == 14){
+		    continue;
+		}
 		if (i != CPSR && i != PC){
 			printf("$%d:            %d (0x%.8x)\n", i, val, val);
 		}

@@ -99,11 +99,10 @@ void end_pipeline(Pipe *pipe, CpuState *cpu_state){
     // Must have decoded a halt
     if (pipe->executing != NULL) {
         // if it decodes a halt is it ok to execute a command? what if it is a branch command?
-        //execute(pipe->executing, cpu_state, pipe);
-        free(pipe->executing);
+        execute(pipe->executing, cpu_state, pipe);
     }
     if (pipe->decoding != NULL){
-        free(pipe->decoding);
+	    execute(pipe->decoding, cpu_state, pipe);
     }
     increment_pc(cpu_state);
     //printf("\n PC = %d \n", cpu_state->registers[PC]);
