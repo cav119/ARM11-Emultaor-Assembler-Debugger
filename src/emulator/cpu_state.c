@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "utilities.h"
+#include "pipeline_executor.h"
 
 #define PC 15
 
@@ -48,20 +49,55 @@ bool get_flag(CpuState *cpuState, flag flag){
 // DEBUGGING, should probably move to utilities.c later
 
 void print_registers(CpuState *cpu_state){
-    for (int i = 0; i < NUM_REGISTERS - 4; i++){
-        printf("reg[%d] = 0x%.8x\n", i, cpu_state->registers[i]);
-    }
-	printf("PC = 0x%.8x\nCPSR = 0x%.8x\n", 
-		cpu_state->registers[PC], 
-		cpu_state->registers[CPSR]
-	);
+	for (int i = 0; i < NUM_REGISTERS; i++){
+		uint32_t val = cpu_state->registers[i];
+		if (i != CPSR && i != PC){
+			printf("$%d:            %d (0x%.8x)\n", i, val, val);
+		}
+		else if (i == PC){
+			printf("PC:            %d (0x%.8x)\n", val, val);
+		}
+		else {
+			printf("CPSR:          %d (0x%.8x)\n", val, val);
+		}
+	}
 }
+
+
 
 
 void print_memory(CpuState *cpu_state, int from, int to){
     for (int i = from; i < to; i++){
         printf("M[0x%.8x] = 0x%.8x\n", i, cpu_state->memory[i]);
     }
+}
+
+void print_nonzero_little_endian_memory(CpuState *cpu_state, size_t bytes){
+    // it is assumed memory is an array of bytes
+    // but addresses are all 32-bit
+    printf("Non-zero memory: \n");
+    for (int i = 0; i < bytes; i += 4){
+        uint32_t val = fetch(i, cpu_state);
+        if (val != 0X0){
+            printf("0x%.8x: 0x%.8x\n", i, val);
+        }
+    }
+}
+
+void print_nonzero_big_endian_memory(CpuState *cpu_state, size_t bytes){
+    printf("Non-zero memory: \n");
+    for (int i = 0; i < bytes; i += 4){
+        uint8_t *memory = cpu_state->memory;
+        uint8_t byte1 = memory[i];
+        uint8_t byte2 = memory[i+1];
+        uint8_t byte3 = memory[i+2];
+        uint8_t byte4 = memory[i+3];
+        uint32_t val = (byte1 << 24) + (byte2 << 16) + (byte3 << 8) + byte4;
+        if (val != 0X0){
+            printf("0x%.8x: 0x%.8x\n", i, val);
+        }
+    }
+
 }
 
 uint32_t *get_pc(CpuState *cpu_state){

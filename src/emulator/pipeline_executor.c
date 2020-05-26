@@ -17,8 +17,7 @@ uint32_t fetch(uint32_t pointer, CpuState *cpuState){
 Pipe *init_pipeline(CpuState *cpu_state){
     Pipe *pipe = calloc(1, sizeof(Pipe));
 
-    printf("\n PC = %d \n", cpu_state->registers[PC]);
-    print_pipeline(pipe);
+    //printf("\n PC = %d \n", cpu_state->registers[PC]);
 
     pipe->fetching = fetch(0, cpu_state);
     increment_pc(cpu_state);
@@ -68,8 +67,7 @@ void start_pipeline(CpuState *cpu_state) {
 
     while (pipe->fetching){
 
-        printf("\n PC = %d \n", cpu_state->registers[PC]);
-        print_pipeline(pipe);
+        //printf("\n PC = %d \n", cpu_state->registers[PC]);
 
         pipe->executing = pipe->decoding;
         if (pipe->fetching == 0x0){
@@ -99,7 +97,6 @@ void start_pipeline(CpuState *cpu_state) {
 
 void end_pipeline(Pipe *pipe, CpuState *cpu_state){
     // Must have decoded a halt
-    print_pipeline(pipe);
     if (pipe->executing != NULL) {
         // if it decodes a halt is it ok to execute a command? what if it is a branch command?
         //execute(pipe->executing, cpu_state, pipe);
@@ -109,11 +106,9 @@ void end_pipeline(Pipe *pipe, CpuState *cpu_state){
         free(pipe->decoding);
     }
     increment_pc(cpu_state);
-    printf("\n PC = %d \n", cpu_state->registers[PC]);
-    print_pipeline(pipe);
+    //printf("\n PC = %d \n", cpu_state->registers[PC]);
 
     free(pipe);
-    printf("\n\n");
 }
 
 
