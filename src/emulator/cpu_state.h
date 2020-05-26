@@ -1,5 +1,6 @@
 #ifndef CPU_STATE_H
 #define CPU_STATE_H
+#include <stdlib.h>
 
 // CpuState struct
 typedef struct {
@@ -17,6 +18,13 @@ CpuState *cpu_state_init(void);
 // Frees the allocated memory in the CpuState
 void cpu_state_free(CpuState *cpu_state);
 
+// prints fields of memory that are non-zero in little endian
+// cpu has memory of size "bytes"
+void print_nonzero_little_endian_memory(CpuState *cpu_state, size_t bytes);
+
+//prints fields of memory that are non-zero in big endian
+// cpu has memory of size "bytes"
+void print_nonzero_big_endian_memory(CpuState *cpu_state, size_t bytes);
 
 // should probably move these two funcs to utilities.c
 // Prints the current state of all registers for debugging

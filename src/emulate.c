@@ -8,22 +8,12 @@
 #include "emulator/utilities.h"
 #include "emulator/pipeline_executor.h"
 #include "emulator/pipeline_data.h"
-
 // prints first instruction (little endian) as a test
-void print_first_instruction(CpuState *cpu_state) {
-	uint8_t byte1 = cpu_state->memory[3];
-	uint8_t byte2 = cpu_state->memory[2];
-	uint8_t byte3 = cpu_state->memory[1];
-	uint8_t byte4 = cpu_state->memory[0];
-
-	printf("First instruction is: %.2x %.2x %.2x %.2x\n", byte1, byte2, byte3, byte4);
-}
 
 int main(int argc, char *argv[]) {
     setbuf(stdout, 0);
 
 	assert(argc == 2);
-	printf("%s\n", argv[1]);
 
 	// Open binary file and check if it was a valid path to file
 	FILE *prog_file = fopen(argv[1], "rb");               
@@ -48,15 +38,8 @@ int main(int argc, char *argv[]) {
 	start_pipeline(cpu_state);
 
 	// Print state of program for testing
-    print_registers(cpu_state);
-	print_memory(cpu_state, 0, file_length);
-
-	//prints all instructions and its type
-	printf("\n");
-	// edited because it causes a memory leak
-    /*for (int p = 0; fetch(p, cpu_state) != 0; p+=4) {
-        printf("%.8x -> %s\n", fetch(p, cpu_state), instr_to_string(decode_instruction(fetch(p, cpu_state))->type));
-    }*/
+	print_registers(cpu_state);
+    print_nonzero_big_endian_memory(cpu_state, MEMORY_SIZE);
 
 	cpu_state_free(cpu_state);
 
