@@ -18,7 +18,10 @@ Pipe *init_pipeline(CpuState *cpu_state) {
 
 uint32_t fetch(uint32_t ptr, CpuState *cpu_state) {
     uint32_t code = 0;
-    check_valid_memory_access(cpu_state, ptr);
+    bool valid = check_valid_memory_access(cpu_state, ptr);
+    if (!valid) {
+        return 0;
+    }
 
     for (int i = ptr; i < ptr + 4; i++) {
         code += (cpu_state->memory[i] << (8 * i));

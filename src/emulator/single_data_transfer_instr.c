@@ -20,7 +20,10 @@ void execute_single_data_transfer_instr(CpuState *cpu_state, Instruction *instr)
     uint16_t offset = compute_offset(cpu_state, instr);
     uint32_t address = compute_address(cpu_state, instr, offset);
 
-    check_valid_memory_access(cpu_state, address);
+    bool valid = check_valid_memory_access(cpu_state, address);
+    if (!valid) {
+        return;
+    }
 
     // Load/store based on the transfer operation bit, rearranging for little endian
     if (TRANSFER_TYPE_BIT) {

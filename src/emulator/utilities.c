@@ -8,13 +8,12 @@ void print_error_exit(char error_msg[]) {
 }
 
 
-void check_valid_memory_access(CpuState *cpu_state, uint32_t address) {
-	if (address > MEMORY_SIZE - 4) {
+bool check_valid_memory_access(CpuState *cpu_state, uint32_t address) {
+	if (address > MEMORY_SIZE - 4 || address < 0) {
         printf("Error: Out of bounds memory access at address 0x%.8x\n", address);
-        print_registers(cpu_state);
-        print_nonzero_big_endian_memory(cpu_state, MEMORY_SIZE);
-        exit(EXIT_FAILURE);
+        return false;
     }
+    return true;
 }
 
 
@@ -96,11 +95,9 @@ bool check_CPSR_cond(uint8_t cond, CpuState* cpu_state) {
         case 11:
             return get_flag(cpu_state, N ) != get_flag(cpu_state, V);
         case 12:
-            return !get_flag(cpu_state, Z) &&
-                    (get_flag(cpu_state, N) == get_flag(cpu_state, V));
+            return !get_flag(cpu_state, Z) && (get_flag(cpu_state, N) == get_flag(cpu_state, V));
         case 13:
-            return get_flag(cpu_state, Z) ||
-            (get_flag(cpu_state, N ) != get_flag(cpu_state, V));
+            return get_flag(cpu_state, Z) || (get_flag(cpu_state, N ) != get_flag(cpu_state, V));
         case 14:
             return true;
         default:

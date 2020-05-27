@@ -15,7 +15,7 @@
 void print_error_exit(char error_msg[]);
 
 // Checks that an address is in bounds (should be called before any memory access) 
-void check_valid_memory_access(CpuState *cpu_state, uint32_t address);
+bool check_valid_memory_access(CpuState *cpu_state, uint32_t address);
 
 // Prints a 32 bit binary number
 void print_bits_32(uint32_t n);
