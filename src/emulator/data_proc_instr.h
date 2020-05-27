@@ -10,6 +10,7 @@
 #include "utilities.h"
 #include "barrel_shifter.h"
 
+// Opcode enum
 typedef enum {
     and = 0,
     eor = 1,
@@ -23,6 +24,8 @@ typedef enum {
     mov = 13
 } opcode_type;
 
+
+// Executes a data processing type instruction
 void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr);
 
 #endif

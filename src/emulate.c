@@ -8,7 +8,7 @@
 #include "emulator/utilities.h"
 #include "emulator/pipeline_executor.h"
 #include "emulator/pipeline_data.h"
-// prints first instruction (little endian) as a test
+
 
 int main(int argc, char *argv[]) {
     setbuf(stdout, 0);
@@ -21,7 +21,6 @@ int main(int argc, char *argv[]) {
 
 	// Initialise the CpuState
 	CpuState *cpu_state = cpu_state_init();
-	// Initialise the pipeline
 
 	// Get file length by moving cursor to the end and return back to start
 	fseek(prog_file, 0, SEEK_END);                         

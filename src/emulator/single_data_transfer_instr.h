@@ -1,6 +1,5 @@
 #ifndef SINGLE_DATA_TRANSFER_INSTR_H
 #define SINGLE_DATA_TRANSFER_INSTR_H
-
 #include <stdbool.h>
 #include "cpu_state.h"
 #include "pipeline_data.h"

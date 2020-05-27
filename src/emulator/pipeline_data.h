@@ -1,7 +1,6 @@
 #ifndef PIPELINE_DATA_H
 #define PIPELINE_DATA_H
 
-
 // instruction_type enum
 typedef enum {
 	data_process,
@@ -16,6 +15,7 @@ typedef struct {
 	instruction_type type;	
 } Instruction;
 
+// Pipeline struct
 typedef struct {
     Instruction *executing;
     Instruction *decoding;

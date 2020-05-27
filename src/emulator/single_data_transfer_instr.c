@@ -15,18 +15,12 @@
 
 
 void execute_single_data_transfer_instr(CpuState *cpu_state, Instruction *instr) {
-    // Need to check this assertion (last line of the spec)
-    // if (cpu_state->registers[process_mask(instr->code, 16, 19) == cpu_state->registers[PC]) {
-    //     assert(cpu_state->registers[PC] == cpu_state->memory[cpu_state->registers[PC]] + 8);
-    // }
+    assert(TRANSFER_REG_BITS < NUM_REGISTERS);
 
     uint16_t offset = compute_offset(cpu_state, instr);
     uint32_t address = compute_address(cpu_state, instr, offset);
 
-    if (address >= MEMORY_SIZE - 4) {
-        print_error_exit("Out of bounds memory access.");
-    }
-    assert(TRANSFER_REG_BITS < NUM_REGISTERS);
+    check_valid_memory_access(cpu_state, address);
 
     // Load/store based on the transfer operation bit, rearranging for little endian
     if (TRANSFER_TYPE_BIT) {
@@ -42,8 +36,8 @@ void execute_single_data_transfer_instr(CpuState *cpu_state, Instruction *instr)
         cpu_state->memory[address + 2] = process_mask(reg_val, 16, 23);
         cpu_state->memory[address + 3] = process_mask(reg_val, 24, 31);
     }
-
 }
+
 
 uint16_t compute_offset(CpuState *cpu_state, Instruction *instr) {
     uint16_t offset;
@@ -58,21 +52,22 @@ uint16_t compute_offset(CpuState *cpu_state, Instruction *instr) {
     return offset;
 }
 
+
 uint32_t compute_address(CpuState *cpu_state, Instruction *instr, uint16_t offset) {
     uint32_t address;
     uint32_t base_reg_val = cpu_state->registers[BASE_REG_BITS];
 
-    if (UP_BIT) {                                               // up bit is set
-        if (INDEXING_BIT) {                                         // pre-indexing
+    if (UP_BIT) {                                          // up bit is set
+        if (INDEXING_BIT) {                                    // pre-indexing
             address = base_reg_val + offset;
-        } else {                                                    // post-indexing
+        } else {                                               // post-indexing
             address = base_reg_val;
             cpu_state->registers[BASE_REG_BITS] += offset; 
         }
-    } else {                                                    // up bit not set
-        if (INDEXING_BIT) {                                         // pre-indexing
+    } else {                                               // up bit not set
+        if (INDEXING_BIT) {                                    // pre-indexing
             address = base_reg_val - offset;
-        } else {                                                    // post-indexing
+        } else {                                               // post-indexing
             address = base_reg_val;
             cpu_state->registers[BASE_REG_BITS] -= offset; 
         }
