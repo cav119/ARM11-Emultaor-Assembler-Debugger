@@ -23,9 +23,12 @@ uint32_t fetch(uint32_t ptr, CpuState *cpu_state) {
         return 0;
     }
 
-    for (int i = ptr; i < ptr + 4; i++) {
-        code += (cpu_state->memory[i] << (8 * i));
-    }
+    // Get bytes in little endian order
+    uint8_t b1 = cpu_state->memory[ptr];
+    uint8_t b2 = cpu_state->memory[ptr + 1];
+    uint8_t b3 = cpu_state->memory[ptr + 2];
+    uint8_t b4 = cpu_state->memory[ptr + 3];
+    code = b1 | (b2 << 8) | (b3 << 16) | (b4 << 24);
     return code;
 }
 
@@ -100,7 +103,7 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
 
 
 void start_pipeline(CpuState *cpu_state) {
-    Pipe *pipe = init_pipeline(cpu_state);
+    register Pipe *pipe = init_pipeline(cpu_state);
     continue_pipe:
     while (pipe->fetching) {
         pipe->executing = pipe->decoding;

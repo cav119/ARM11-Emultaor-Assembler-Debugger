@@ -5,10 +5,10 @@
 #include "utilities.h"
 #include "barrel_shifter.h"
 
-#define IMMEDIATE_BIT process_mask(instr->code, 25, 25)
-#define INDEXING_BIT process_mask(instr->code, 24, 24)
-#define UP_BIT process_mask(instr->code, 23, 23)
-#define TRANSFER_TYPE_BIT process_mask(instr->code, 20, 20)
+#define IMMEDIATE_BIT bit_mask(instr->code, 25)
+#define INDEXING_BIT bit_mask(instr->code, 24)
+#define UP_BIT bit_mask(instr->code, 23)
+#define TRANSFER_TYPE_BIT bit_mask(instr->code, 20)
 #define OFFSET_BITS process_mask(instr->code, 0, 11)
 #define BASE_REG_BITS process_mask(instr->code, 16, 19)
 #define TRANSFER_REG_BITS process_mask(instr->code, 12, 15)

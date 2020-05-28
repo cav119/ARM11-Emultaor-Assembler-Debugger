@@ -11,13 +11,13 @@ void execute_multiply_instruction(Instruction* instr, CpuState *cpu_state){
     uint32_t set = bit_mask(instr->code, 20);
 
     uint32_t result = cpu_state->registers[REG_M_BITS] * cpu_state->registers[REG_S_BITS];
-    if (ACCUMULATE_BITS){
+    if (ACCUMULATE_BITS) {
         result += cpu_state->registers[REG_N_BITS];
     }
 
     if (set) {
         set_CPSR_flag(cpu_state, N, bit_mask(result, 31));
-        if (!result){
+        if (!result) {
             set_CPSR_flag(cpu_state, Z, 1);
         }
     }

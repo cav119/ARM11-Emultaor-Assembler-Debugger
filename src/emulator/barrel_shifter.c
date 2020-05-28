@@ -2,7 +2,7 @@
 
 #define SHIFTED_REG_M_BITS process_mask(instr->code, 0, 3)
 #define SHIFT_TYPE_BITS process_mask(instr->code, 5, 6)
-#define SHIFT_MODE_BIT process_mask(instr->code, 4, 4)
+#define SHIFT_MODE_BIT bit_mask(instr->code, 4)
 #define SHIFT_REGISTER_BITS process_mask(instr->code, 8, 11)
 #define SHIFT_CONSTANT_BITS process_mask(instr->code, 7, 11)
 

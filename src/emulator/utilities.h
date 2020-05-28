@@ -17,18 +17,12 @@ void print_error_exit(char error_msg[]);
 // Checks that an address is in bounds (should be called before any memory access) 
 bool check_valid_memory_access(CpuState *cpu_state, uint32_t address);
 
-// Prints a 32 bit binary number
-void print_bits_32(uint32_t n);
-
 // Returns the masked bit pattern from start to end of a number, 
 // shifted to the beggining for readability
 uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos);
 
-// Returns masked single bit
+// Checks if a bit is on
 uint32_t bit_mask(uint32_t n, uint8_t pos);
-
-// Returns the string version of an instruction type
-char* instr_to_string(instruction_type type);
 
 // Checks if a pointer is defined. Otherwise, prints message and exits
 void check_ptr_not_null(void *ptr, char error_msg[]);

@@ -5,7 +5,6 @@
 
 #define CONDITION_BITS process_mask(instr->code, 28, 31)
 #define OFFSET_BITS process_mask(instr->code, 0, 23)
-#define SIGN_BIT process_mask(offset, 25, 25)
 
 
 bool execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
@@ -18,7 +17,7 @@ bool execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
     // processing offset
     int32_t offset = (int32_t) OFFSET_BITS << 2;
 
-    if (SIGN_BIT) {
+    if (bit_mask(offset, 25)) {
         // must be a negative number, sign extending number
         // uint32_t mask = ((1 << 32) - 1) - ((1 << 26) - 1); // compiler doesn't like this
         uint32_t mask = 1 << 26;

@@ -7,4 +7,3 @@
 bool execute_branch_instr(Instruction *instr, CpuState *cpu_state, Pipe* pipe);
 
 #endif
-

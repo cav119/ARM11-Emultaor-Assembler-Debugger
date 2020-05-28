@@ -13,12 +13,12 @@ CpuState *cpu_state_init(void) {
 	check_ptr_not_null(cpu_state, "Could not allocate cpu state memory");
 
 	// allocate and init registers to 0
-	uint8_t *allocated_regs = calloc(NUM_REGISTERS, sizeof(uint32_t));
+	register uint8_t *allocated_regs = calloc(NUM_REGISTERS, sizeof(uint32_t));
 	check_ptr_not_null(allocated_regs, "Could not allocate and initialise registers");
 	cpu_state->registers = (uint32_t *) allocated_regs;
 
 	// allocate and init memory to 0
-	uint8_t *allocated_memory = calloc(MEMORY_SIZE, sizeof(uint8_t));
+	register uint8_t *allocated_memory = calloc(MEMORY_SIZE, sizeof(uint8_t));
 	check_ptr_not_null(allocated_memory, "Could not allocate and initialise RAM memory");
 	cpu_state->memory = (uint8_t *) allocated_memory;
 
@@ -72,19 +72,12 @@ void print_registers(CpuState *cpu_state) {
 		else {
 			printf("CPSR:");
 		}
-		if (val == 0x80000000) {  // weird edge case
+		if (val == 0x80000000) {  // weird edge case (test suite has inconsistent spacing)
 			printf(" ");
 		}
 		printf("%11d", val);
 		printf(" (0x%.8x)\n", val);
 	}
-}
-
-
-void print_memory(CpuState *cpu_state, int from, int to) {
-    for (int i = from; i < to; i++){
-        printf("M[0x%.8x] = 0x%.2x\n", i, cpu_state->memory[i]);
-    }
 }
 
 
@@ -103,21 +96,22 @@ void print_nonzero_little_endian_memory(CpuState *cpu_state, size_t bytes) {
 
 void print_nonzero_big_endian_memory(CpuState *cpu_state, size_t bytes) {
     printf("Non-zero memory:\n");
-    for (int i = 0; i < bytes; i += 4){
+    for (int i = 0; i < bytes; i += 4) {
         uint8_t *memory = cpu_state->memory;
         uint8_t byte1 = memory[i];
         uint8_t byte2 = memory[i+1];
         uint8_t byte3 = memory[i+2];
         uint8_t byte4 = memory[i+3];
-        uint32_t val = (byte1 << 24) + (byte2 << 16) + (byte3 << 8) + byte4;
-        if (val != 0X0){
-            printf("0x%.8x: 0x%.8x\n", i, val);
+        uint32_t val = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
+        if (val == 0x0) {
+			continue;
         }
+        printf("0x%.8x: 0x%.8x\n", i, val);
     }
 }
 
 
-uint32_t *get_pc(CpuState *cpu_state) {
+static uint32_t *get_pc(CpuState *cpu_state) {
 	return (cpu_state->registers) + PC;
 }
 

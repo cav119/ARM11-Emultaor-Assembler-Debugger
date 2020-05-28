@@ -1,7 +1,7 @@
 #include "data_proc_instr.h"
 
-#define IMMEDIATE_ENABLE_BIT process_mask(instr->code, 25, 25)
-#define CPSR_ENABLE_BIT process_mask(instr->code, 20, 20)
+#define IMMEDIATE_ENABLE_BIT bit_mask(instr->code, 25)
+#define CPSR_ENABLE_BIT bit_mask(instr->code, 20)
 #define OPCODE_BITS process_mask(instr->code, 21, 24)
 #define DEST_REG_BITS process_mask(instr->code, 12, 15)
 #define OPERAND1_REG_BITS process_mask(instr->code, 16, 19)

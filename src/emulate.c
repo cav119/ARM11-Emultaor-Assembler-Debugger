@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
+// #include <time.h>
 
 #include "emulator/cpu_state.h"
 #include "emulator/utilities.h"
@@ -11,7 +12,7 @@
 
 
 int main(int argc, char *argv[]) {
-    setbuf(stdout, 0);
+	// clock_t begin = clock();
 
 	assert(argc == 2);
 
@@ -20,7 +21,7 @@ int main(int argc, char *argv[]) {
 	check_ptr_not_null(prog_file, "Could not open file.");
 
 	// Initialise the CpuState
-	CpuState *cpu_state = cpu_state_init();
+	register CpuState *cpu_state = cpu_state_init();
 
 	// Get file length by moving cursor to the end and return back to start
 	fseek(prog_file, 0, SEEK_END);                         
@@ -41,6 +42,10 @@ int main(int argc, char *argv[]) {
     print_nonzero_big_endian_memory(cpu_state, MEMORY_SIZE);
 
 	cpu_state_free(cpu_state);
+
+	// clock_t end = clock();
+	// double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+	// printf("Time spent: %lfs\n", time_spent);
 
 	return EXIT_SUCCESS;
 }
