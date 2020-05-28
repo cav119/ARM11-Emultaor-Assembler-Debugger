@@ -17,9 +17,9 @@ typedef struct {
 
 // Pipeline struct
 typedef struct {
-    Instruction *executing;
-    Instruction *decoding;
-    uint32_t fetching;
+	Instruction *executing;
+	Instruction *decoding;
+	uint32_t fetching;
 } Pipe;
 
 #endif

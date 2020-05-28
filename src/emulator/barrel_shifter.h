@@ -9,10 +9,10 @@
 
 // shift_op enum is used to specify which shift operation
 typedef enum {
-    lsl,
-    lsr,
-    asr,
-    ror
+	lsl,
+	lsr,
+	asr,
+	ror
 } shift_op;
 
 

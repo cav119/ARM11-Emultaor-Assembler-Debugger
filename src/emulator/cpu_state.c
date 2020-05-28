@@ -13,12 +13,12 @@ CpuState *cpu_state_init(void) {
 	check_ptr_not_null(cpu_state, "Could not allocate cpu state memory");
 
 	// allocate and init registers to 0
-	register uint8_t *allocated_regs = calloc(NUM_REGISTERS, sizeof(uint32_t));
+	uint8_t *allocated_regs = calloc(NUM_REGISTERS, sizeof(uint32_t));
 	check_ptr_not_null(allocated_regs, "Could not allocate and initialise registers");
 	cpu_state->registers = (uint32_t *) allocated_regs;
 
 	// allocate and init memory to 0
-	register uint8_t *allocated_memory = calloc(MEMORY_SIZE, sizeof(uint8_t));
+	uint8_t *allocated_memory = calloc(MEMORY_SIZE, sizeof(uint8_t));
 	check_ptr_not_null(allocated_memory, "Could not allocate and initialise RAM memory");
 	cpu_state->memory = (uint8_t *) allocated_memory;
 
@@ -34,29 +34,29 @@ void cpu_state_free(CpuState *cpu_state) {
 
 
 void set_flag(CpuState *cpuState, flag flag, bool set) {
-    if (flag > 3){
-        print_error_exit("Invalid flag.");
-    }
-    int mask = (1 << (MAX_INDEX - flag));
-    cpuState->registers[CPSR] = set ?
-            cpuState->registers[CPSR] | mask : cpuState->registers[CPSR] & ~(mask);
+	if (flag > 3){
+		print_error_exit("Invalid flag.");
+	}
+	int mask = (1 << (MAX_INDEX - flag));
+	cpuState->registers[CPSR] = set ?
+			cpuState->registers[CPSR] | mask : cpuState->registers[CPSR] & ~(mask);
 }
 
 
 bool get_flag(CpuState *cpuState, flag flag) {
-    int mask = (1 << (MAX_INDEX - flag));
-    return cpuState->registers[CPSR] & mask;
+	int mask = (1 << (MAX_INDEX - flag));
+	return cpuState->registers[CPSR] & mask;
 }
 
 
 // Functions to print the state of the cpu (registers, memory)
 
 void print_registers(CpuState *cpu_state) {
-    printf("Registers:\n");
+	printf("Registers:\n");
 	for (int i = 0; i < NUM_REGISTERS; i++) {
 		uint32_t val = cpu_state->registers[i];
 		if (i == 13 || i == 14) {
-		    continue;
+			continue;
 		}
 
 		if (i != CPSR && i != PC) {
@@ -82,32 +82,32 @@ void print_registers(CpuState *cpu_state) {
 
 
 void print_nonzero_little_endian_memory(CpuState *cpu_state, size_t bytes) {
-    // it is assumed memory is an array of bytes
-    // but addresses are all 32-bit
-    printf("Non-zero memory:\n");
-    for (int i = 0; i < bytes; i += 4){
-        uint32_t val = fetch(i, cpu_state);
-        if (val != 0X0){
-            printf("0x%.8x: 0x%.8x\n", i, val);
-        }
-    }
+	// it is assumed memory is an array of bytes
+	// but addresses are all 32-bit
+	printf("Non-zero memory:\n");
+	for (int i = 0; i < bytes; i += 4){
+		uint32_t val = fetch(i, cpu_state);
+		if (val != 0X0){
+			printf("0x%.8x: 0x%.8x\n", i, val);
+		}
+	}
 }
 
 
 void print_nonzero_big_endian_memory(CpuState *cpu_state, size_t bytes) {
-    printf("Non-zero memory:\n");
-    for (int i = 0; i < bytes; i += 4) {
-        uint8_t *memory = cpu_state->memory;
-        uint8_t byte1 = memory[i];
-        uint8_t byte2 = memory[i+1];
-        uint8_t byte3 = memory[i+2];
-        uint8_t byte4 = memory[i+3];
-        uint32_t val = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
-        if (val == 0x0) {
+	printf("Non-zero memory:\n");
+	for (int i = 0; i < bytes; i += 4) {
+		uint8_t *memory = cpu_state->memory;
+		uint8_t byte1 = memory[i];
+		uint8_t byte2 = memory[i+1];
+		uint8_t byte3 = memory[i+2];
+		uint8_t byte4 = memory[i+3];
+		uint32_t val = (byte1 << 24) | (byte2 << 16) | (byte3 << 8) | byte4;
+		if (val == 0x0) {
 			continue;
-        }
-        printf("0x%.8x: 0x%.8x\n", i, val);
-    }
+		}
+		printf("0x%.8x: 0x%.8x\n", i, val);
+	}
 }
 
 
