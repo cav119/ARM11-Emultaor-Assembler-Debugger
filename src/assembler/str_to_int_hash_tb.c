@@ -1,4 +1,5 @@
-// courtesy of http://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)HashTables.html
+//base functionality imported from
+//  http://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)HashTables.html
 
 #include <stdlib.h>
 #include <assert.h>
