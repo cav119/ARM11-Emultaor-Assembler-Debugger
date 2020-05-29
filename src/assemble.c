@@ -62,7 +62,7 @@ uint32_t encode_multiply(char *instr[]){
     n|= read_red_num(instr[2]);
     n|= (read_red_num(instr[3]) << 8);
 
-    if (stricmp(instr[0], "mull") != 0){
+    if (strcasecmp(instr[0], "mull") != 0){
         n = setBit(n, 21);
         n|= (read_red_num(instr[4]) << 12);
     }
