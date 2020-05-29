@@ -94,6 +94,5 @@ int main(int argc, char **argv) {
         printf("\n");
     }
 
-    printf("%x", encode_multiply(array_of_words[3]));
     return 0;
 }
