@@ -51,6 +51,9 @@ int32_t setBit(uint32_t n, int pos){
 
 
 int read_red_num(char *reg){
+    if (reg == 0){
+        return 0;
+    }
     return  atoi(strtok(reg, "r"));
 }
 
@@ -91,6 +94,5 @@ int main(int argc, char **argv) {
         printf("\n");
     }
 
-    printf("%x", encode_multiply(array_of_words[3]));
     return 0;
 }

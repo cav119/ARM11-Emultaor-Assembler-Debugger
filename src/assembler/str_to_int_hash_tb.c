@@ -9,7 +9,7 @@
 struct elt {
     struct elt *next;
     char *key;
-    char *value;
+    uint32_t value;
 };
 
 struct dict {
@@ -59,7 +59,6 @@ DictDestroy(Dict d)
             next = e->next;
 
             free(e->key);
-            free(e->value);
             free(e);
         }
     }
@@ -117,20 +116,19 @@ grow(Dict d)
 
 /* insert a new key-value pair into an existing dictionary */
 void
-DictInsert(Dict d, const char *key, const char *value)
+DictInsert(Dict d, const char *key, uint32_t value)
 {
     struct elt *e;
     unsigned long h;
 
     assert(key);
-    assert(value);
 
     e = malloc(sizeof(*e));
 
     assert(e);
 
     e->key = strdup(key);
-    e->value = strdup(value);
+    e->value = value; 
 
     h = hash_function(key) % d->size;
 
@@ -147,8 +145,7 @@ DictInsert(Dict d, const char *key, const char *value)
 
 /* return the most recently inserted value associated with a key */
 /* or 0 if no matching key is present */
-const char *
-DictSearch(Dict d, const char *key)
+uint32_t DictSearch(Dict d, const char *key)
 {
     struct elt *e;
 
@@ -179,7 +176,6 @@ DictDelete(Dict d, const char *key)
             *prev = e->next;
 
             free(e->key);
-            free(e->value);
             free(e);
 
             return;
