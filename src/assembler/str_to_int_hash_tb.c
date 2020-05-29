@@ -22,8 +22,8 @@ struct dict {
 #define GROWTH_FACTOR (2)
 #define MAX_LOAD_FACTOR (1)
 
-/* dictionary initialization code used in both DictCreate and grow */
-Dict internalDictCreate(int size)
+/* dictionary initialization code used in both dict_create and grow */
+Dict dict_create_internal(int size)
 {
     Dict d;
     int i;
@@ -43,12 +43,11 @@ Dict internalDictCreate(int size)
     return d;
 }
 
-Dict DictCreate(void) {
-    return internalDictCreate(INITIAL_SIZE);
+Dict dict_create(void) {
+    return dict_create_internal(INITIAL_SIZE);
 }
 
-void
-DictDestroy(Dict d)
+void dict_destroy(Dict d)
 {
     int i;
     struct elt *e;
@@ -84,39 +83,37 @@ hash_function(const char *s)
     return h;
 }
 
-static void
-grow(Dict d)
+static void dict_grow(Dict d)
 {
     Dict d2;            /* new dictionary we'll create */
     struct dict swap;   /* temporary structure for brain transplant */
     int i;
     struct elt *e;
 
-    d2 = internalDictCreate(d->size * GROWTH_FACTOR);
+    d2 = dict_create_internal(d->size * GROWTH_FACTOR);
 
     for(i = 0; i < d->size; i++) {
         for(e = d->table[i]; e != 0; e = e->next) {
             /* note: this recopies everything */
             /* a more efficient implementation would
-             * patch out the strdups inside DictInsert
+             * patch out the strdups inside dict_insert
              * to avoid this problem */
-            DictInsert(d2, e->key, e->value);
+            dict_insert(d2, e->key, e->value);
         }
     }
 
     /* the hideous part */
     /* We'll swap the guts of d and d2 */
-    /* then call DictDestroy on d2 */
+    /* then call dict_destroy on d2 */
     swap = *d;
     *d = *d2;
     *d2 = swap;
 
-    DictDestroy(d2);
+    dict_destroy(d2);
 }
 
 /* insert a new key-value pair into an existing dictionary */
-void
-DictInsert(Dict d, const char *key, uint32_t value)
+void dict_insert(Dict d, const char *key, uint32_t value)
 {
     struct elt *e;
     unsigned long h;
@@ -139,13 +136,13 @@ DictInsert(Dict d, const char *key, uint32_t value)
 
     /* grow table if there is not enough room */
     if(d->n >= d->size * MAX_LOAD_FACTOR) {
-        grow(d);
+        dict_grow(d);
     }
 }
 
 /* return the most recently inserted value associated with a key */
 /* or 0 if no matching key is present */
-uint32_t DictSearch(Dict d, const char *key)
+uint32_t dict_search(Dict d, const char *key)
 {
     struct elt *e;
 
@@ -161,8 +158,7 @@ uint32_t DictSearch(Dict d, const char *key)
 
 /* delete the most recently inserted record with the given key */
 /* if there is no such record, has no effect */
-void
-DictDelete(Dict d, const char *key)
+void dict_delete(Dict d, const char *key)
 {
     struct elt **prev;          /* what to change when elt is deleted */
     struct elt *e;              /* what to delete */
