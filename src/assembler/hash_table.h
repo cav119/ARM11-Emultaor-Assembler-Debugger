@@ -1,3 +1,5 @@
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
 #include <stdint.h>
 
 //base functionality imported from
@@ -44,3 +46,5 @@ void * dict_search(Dict, hashkey key);
 /* delete the most recently inserted record with the given key */
 /* if there is no such record, has no effect */
 void dict_delete(Dict, hashkey key);
+
+#endif
