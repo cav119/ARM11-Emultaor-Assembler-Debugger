@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-
+#include "assembler/str_to_int_hash_tb.h"
 
 
 int count_lines(FILE *file){
@@ -73,7 +73,40 @@ return n;
 
 }
 
+int str_cmp(const void *str1, const void *str2){
+   char *string1 = (char *) str1;
+   char *string2 = (char *) str2;
+   return strcmp(string1, string2) == 0; 
+}
+
+int int_cmp(const void *p1, const void *p2){
+    int *int1 = (int *) p1;
+    int *int2 = (int *) p2;
+    return *int1 == *int2;
+}
+
+int ip(int *key, Dict d){
+    int *intptr = dict_search(d, key);
+    return *intptr;
+}
+
+
+void dict_test(void){
+   Dict d = dict_create(int_cmp);
+   int i1 = 3;
+   int i2 = 19;
+   int foo = 1;
+   dict_insert(d, &foo, &i1);
+    printf("%d\n", ip(&foo, d));
+    dict_insert(d, &foo, &i2);
+   printf("%d\n", ip(&foo, d));
+   dict_delete(d, &foo);
+   dict_destroy(d); 
+
+}
+
 int main(int argc, char **argv) {
+    dict_test();
     assert (argc == 3);
     FILE *file = fopen(argv[1], "r");
 
