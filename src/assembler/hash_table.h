@@ -1,6 +1,5 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
-#define HASHTABLE_H
 #include <stdint.h>
 
 //base functionality imported from
