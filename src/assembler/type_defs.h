@@ -16,6 +16,21 @@ typedef struct {
 	instruction_type type;	
 } Instruction;
 
+// Label and the instruction it points to
+typedef struct {
+   char *name;
+   // The line of the instruction that it points to
+   uint32_t defined_instr_line; 
+} Label;
+
+
+typedef struct {
+    char *name;
+    uint32_t *instruction;
+    // the line number of the branch instruction 
+    uint32_t instruction_line;
+
+} WaitingLabel;
 
 #endif
 
