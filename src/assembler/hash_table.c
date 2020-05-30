@@ -1,30 +1,19 @@
-//base functionality imported from
-//  http://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)HashTables.html
+
 
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 
-#include "str_to_int_hash_tb.h"
+#include "hash_table.h"
 
-struct elt {
-    struct elt *next;
-    char *key;
-    uint32_t value;
-};
-
-struct dict {
-    int size;           /* size of the pointer table */
-    int n;              /* number of elements stored */
-    struct elt **table;
-};
 
 #define INITIAL_SIZE (1024)
 #define GROWTH_FACTOR (2)
 #define MAX_LOAD_FACTOR (1)
 
+
 /* dictionary initialization code used in both dict_create and grow */
-Dict dict_create_internal(int size)
+Dict dict_create_internal(int size, int (*comp)(const void *, const void *))
 {
     Dict d;
     int i;
@@ -36,7 +25,7 @@ Dict dict_create_internal(int size)
     d->size = size;
     d->n = 0;
     d->table = malloc(sizeof(struct elt *) * d->size);
-
+    d->comp = comp;
     assert(d->table != 0);
 
     for(i = 0; i < d->size; i++) d->table[i] = 0;
@@ -44,8 +33,9 @@ Dict dict_create_internal(int size)
     return d;
 }
 
-Dict dict_create(void) {
-    return dict_create_internal(INITIAL_SIZE);
+// creates a dictionary with a comparator function
+Dict dict_create(int (*comp)(const void *, const void *)) {
+    return dict_create_internal(INITIAL_SIZE, comp);
 }
 
 void dict_destroy(Dict d)
@@ -57,7 +47,7 @@ void dict_destroy(Dict d)
     for(i = 0; i < d->size; i++) {
         for(e = d->table[i]; e != 0; e = next) {
             next = e->next;
-
+            free(e->value);
             free(e->key);
             free(e);
         }
@@ -69,8 +59,7 @@ void dict_destroy(Dict d)
 
 #define MULTIPLIER (97)
 
-static unsigned long
-hash_function(const char *s)
+static unsigned long hash_function(const char *s)
 {
     unsigned const char *us;
     unsigned long h;
@@ -91,7 +80,7 @@ static void dict_grow(Dict d)
     int i;
     struct elt *e;
 
-    d2 = dict_create_internal(d->size * GROWTH_FACTOR);
+    d2 = dict_create_internal(d->size * GROWTH_FACTOR, d->comp);
 
     for(i = 0; i < d->size; i++) {
         for(e = d->table[i]; e != 0; e = e->next) {
@@ -114,7 +103,7 @@ static void dict_grow(Dict d)
 }
 
 /* insert a new key-value pair into an existing dictionary */
-void dict_insert(Dict d, const char *key, uint32_t value)
+void dict_insert(Dict d, hashkey key, hashvalue value)
 {
     struct elt *e;
     unsigned long h;
@@ -128,7 +117,7 @@ void dict_insert(Dict d, const char *key, uint32_t value)
     e->key = strdup(key);
     e->value = value; 
 
-    h = hash_function(key) % d->size;
+    h = hash_function((char *)key) % d->size;
 
     e->next = d->table[h];
     d->table[h] = e;
@@ -143,12 +132,11 @@ void dict_insert(Dict d, const char *key, uint32_t value)
 
 /* return the most recently inserted value associated with a key */
 /* or 0 if no matching key is present */
-uint32_t dict_search(Dict d, const char *key)
+void *dict_search(Dict d, hashkey key)
 {
     struct elt *e;
-
-    for(e = d->table[hash_function(key) % d->size]; e != 0; e = e->next) {
-        if(!strcmp(e->key, key)) {
+    for(e = d->table[hash_function((char *) key) % d->size]; e != 0; e = e->next) {
+        if(d->comp(e->key, key)) {
             /* got it */
             return e->value;
         }
@@ -159,15 +147,15 @@ uint32_t dict_search(Dict d, const char *key)
 
 /* delete the most recently inserted record with the given key */
 /* if there is no such record, has no effect */
-void dict_delete(Dict d, const char *key)
+void dict_delete(Dict d, hashkey key)
 {
     struct elt **prev;          /* what to change when elt is deleted */
     struct elt *e;              /* what to delete */
 
-    for(prev = &(d->table[hash_function(key) % d->size]); 
+    for(prev = &(d->table[hash_function((char *) key) % d->size]); 
         *prev != 0; 
         prev = &((*prev)->next)) {
-        if(!strcmp((*prev)->key, key)) {
+        if (d->comp((*prev)->key, key)){ 
             /* got it */
             e = *prev;
             *prev = e->next;
