@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-uint32_t encode_multiply(char *instr[]){
+Instruction *encode_multiply(char *instr[]){
     uint32_t n = (111 << 29);
     n = setBit(n, 4);
     n = setBit(n, 7);
@@ -14,5 +14,8 @@ uint32_t encode_multiply(char *instr[]){
         n = setBit(n, 21);
         n|= (read_red_num(instr[4]) << 12);
     }
-return n;
+    Instruction *instruction;
+    instruction->type = multiply;
+    instruction->code = n;
+return instruction;
 }
