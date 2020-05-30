@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "asm_utilities.h"
+#include <stdio.h>
 
 // char **get_instr_tokens(char instr[]) {
 //     char **words = calloc(5, 512);
