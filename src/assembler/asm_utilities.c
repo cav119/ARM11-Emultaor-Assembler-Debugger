@@ -26,6 +26,10 @@ uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos) {
     return (n >> start_pos) & mask;
 }
 
+int32_t setBit(uint32_t n, int pos){
+    n |= (1 << pos);
+    return n;
+}
 
 void print_bits(uint32_t x) {
     int i;

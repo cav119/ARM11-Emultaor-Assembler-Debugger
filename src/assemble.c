@@ -44,33 +44,12 @@ char **line_to_words(char array[]){
     return words;
 }
 
-int32_t setBit(uint32_t n, int pos){
-    n |= (1 << pos);
-    return n;
-}
-
 
 int read_red_num(char *reg){
     if (reg == 0){
         return 0;
     }
     return  atoi(strtok(reg, "r"));
-}
-
-uint32_t encode_multiply(char *instr[]){
-    uint32_t n = (111 << 29);
-    n = setBit(n, 4);
-    n = setBit(n, 7);
-    n |= (read_red_num(instr[1]) << 16);
-    n|= read_red_num(instr[2]);
-    n|= (read_red_num(instr[3]) << 8);
-
-    if (strcasecmp(instr[0], "mull") != 0){
-        n = setBit(n, 21);
-        n|= (read_red_num(instr[4]) << 12);
-    }
-return n;
-
 }
 
 int main(int argc, char **argv) {
