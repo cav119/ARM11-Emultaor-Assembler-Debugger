@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "str_to_int_hash_tb.h"
+#include "hash_table.h"
 
 
 #define INITIAL_SIZE (1024)
@@ -47,7 +47,7 @@ void dict_destroy(Dict d)
     for(i = 0; i < d->size; i++) {
         for(e = d->table[i]; e != 0; e = next) {
             next = e->next;
-
+            free(e->value);
             free(e->key);
             free(e);
         }
