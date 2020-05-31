@@ -1,6 +1,5 @@
 #ifndef ASM_TYPES_H 
-#define ASM_TYPES_H
-#include <stdint.h>
+#define PIPELINE_DATA_H
 
 // instruction_type enum
 typedef enum {

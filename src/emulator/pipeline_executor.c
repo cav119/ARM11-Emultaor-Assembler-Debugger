@@ -104,26 +104,31 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
 
 
 void start_pipeline(CpuState *cpu_state) {
-    Pipe *pipe = init_pipeline(cpu_state);
-    do {
-        while (pipe->fetching) {
-            pipe->executing = pipe->decoding;
-            pipe->decoding = decode_instruction(pipe->fetching);
+    register Pipe *pipe = init_pipeline(cpu_state);
+    continue_pipe:
+    while (pipe->fetching) {
+        pipe->executing = pipe->decoding;
+        pipe->decoding = decode_instruction(pipe->fetching);
 
-            bool branch_instr_succeeded = false;
-            if (pipe->executing) {
-                instruction_type type = pipe->executing->type;
-                bool succeeded = execute(pipe->executing,cpu_state, pipe);
-                if (succeeded && type == branch) {
-                    branch_instr_succeeded = true;
-                }
-            }
-            if (!branch_instr_succeeded) {
-                pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
-                increment_pc(cpu_state);
+        bool branch_instr_succeeded = false;
+        if (pipe->executing) {
+            instruction_type type = pipe->executing->type;
+            bool succeeded = execute(pipe->executing,cpu_state, pipe);
+            if (succeeded && type == branch) {
+                branch_instr_succeeded = true;
             }
         }
-    } while (!end_pipeline(pipe, cpu_state));
+        if (!branch_instr_succeeded) {
+            pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
+            increment_pc(cpu_state);
+        }
+    }
+
+    // TODO: REMOVE GOTO, USE SOME OTHER TECHNIQUE TO LOOP BACK
+    bool ended = end_pipeline(pipe, cpu_state);
+    if (!ended) {
+        goto continue_pipe;
+    }
 }
 
 
