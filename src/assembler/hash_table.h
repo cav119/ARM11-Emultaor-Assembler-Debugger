@@ -1,50 +1,43 @@
 #ifndef HASHTABLE_H
 #define HASHTABLE_H
 #include <stdint.h>
+#include <stdlib.h>
 
-//base functionality imported from
-//  http://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)HashTables.html
-
-
-/* Creates a new Dictionary (~hashmap) with any type as key or value 
-//    but always operatoes on pointers, so if you want (int, int)
-//    you'll have to use (*int, *int)
-
-*/
-
-typedef struct dict *Dict;
+#define TABLE_SIZE 20000
 typedef void *hashkey;
 typedef void *hashvalue;
 
-struct elt {
-    struct elt *next;
+// Entry, which records the size in bytes of the key
+typedef struct {
     hashkey key;
     hashvalue value;
-};
+    size_t key_size; 
+    struct Entry *next;
+} Entry;
 
-struct dict {
-    int size;           /* size of the pointer table */
-    int n;              /* number of elements stored */
+// table of entries with a comparator function
+typedef struct {
     int (*comp)(const void *, const void *);
-    struct elt **table;
-};
+    Entry **entries;
+} HashTable;
 
 
-/* create a new empty dictionary */
-Dict dict_create(int (*comp)(const void *, const void *));
+// Hash key of 'size' bytes
+unsigned long hash(const hashkey key, size_t size); 
 
-/* destroy a dictionary */
-void dict_destroy(Dict);
+// Creates a HashTable
+HashTable *ht_create(int (*comp)(const void*, const void*)); 
 
-/* insert a new key-value pair into an existing dictionary */
-void dict_insert(Dict, hashkey key, hashvalue value);
+// sets the value of given key of 'size' bytes
+void ht_set(HashTable *hashtable, const hashkey key, const hashvalue value, size_t size);
 
-/* return the most recently inserted value associated with a key */
-/* or 0 if no matching key is present */
-void * dict_search(Dict, hashkey key);
+// Gets the pointer to the value or NULL if failed, according to the size in bytes of key
+hashvalue ht_get(HashTable *hashtable, const hashkey key, size_t key_size);
 
-/* delete the most recently inserted record with the given key */
-/* if there is no such record, has no effect */
-void dict_delete(Dict, hashkey key);
+// Deletes a key from the hashtable, according to its size in btyes
+void ht_del(HashTable *hashtable, const hashkey key, size_t key_size);
+
+// Free hashtable
+void ht_free(HashTable *hashtable);
 
 #endif

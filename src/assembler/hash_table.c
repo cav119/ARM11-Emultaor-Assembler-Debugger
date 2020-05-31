@@ -1,169 +1,190 @@
-
-
+#include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 
 #include "hash_table.h"
+ 
+unsigned long hash(const hashkey key, size_t size) {
+    char *char_key = (char *) key;
+    unsigned long value = 0;
+    unsigned int i = 0;
 
+    // do several rounds of multiplication
+    for (; i < size; i++) {
+        value = value * 37 + char_key[i];
+    }
 
-#define INITIAL_SIZE (1024)
-#define GROWTH_FACTOR (2)
-#define MAX_LOAD_FACTOR (1)
+    // make sure value is 0 <= value < TABLE_SIZE
+    value = value % TABLE_SIZE;
 
+    return value;
+} 
 
-/* dictionary initialization code used in both dict_create and grow */
-Dict dict_create_internal(int size, int (*comp)(const void *, const void *))
-{
-    Dict d;
-    int i;
+Entry *ht_pair(const hashkey key, const hashkey value, size_t key_size) {
+    // allocate the entry
+    Entry *entry = malloc(sizeof(Entry));
+    entry->key = key;
+    entry->value = value;
+    entry->key_size = key_size;
 
-    d = malloc(sizeof(*d));
+    // next starts out null but may be set later on
+    entry->next = NULL;
 
-    assert(d != 0);
-
-    d->size = size;
-    d->n = 0;
-    d->table = malloc(sizeof(struct elt *) * d->size);
-    d->comp = comp;
-    assert(d->table != 0);
-
-    for(i = 0; i < d->size; i++) d->table[i] = 0;
-
-    return d;
+    return entry;
 }
 
-// creates a dictionary with a comparator function
-Dict dict_create(int (*comp)(const void *, const void *)) {
-    return dict_create_internal(INITIAL_SIZE, comp);
+HashTable *ht_create(int (*comp)(const void*, const void*)) {
+    // allocate table
+    HashTable *hashtable = malloc(sizeof(HashTable));
+    hashtable->comp = comp;
+    // allocate table entries
+    hashtable->entries = malloc(sizeof(Entry*) * TABLE_SIZE);
+
+    // set each to null (needed for proper operation)
+    int i = 0;
+    for (; i < TABLE_SIZE; ++i) {
+        hashtable->entries[i] = NULL;
+    }
+
+    return hashtable;
 }
 
-void dict_destroy(Dict d)
-{
-    int i;
-    struct elt *e;
-    struct elt *next;
+void ht_set(HashTable *hashtable, const hashkey key, const hashvalue value, size_t size) {
+    unsigned long slot = hash(key, size);
 
-    for(i = 0; i < d->size; i++) {
-        for(e = d->table[i]; e != 0; e = next) {
-            next = e->next;
-            free(e->value);
-            free(e->key);
-            free(e);
+    // try to look up an entry set
+    Entry *entry = hashtable->entries[slot];
+
+    // no entry means slot empty, insert immediately
+    if (entry == NULL) {
+        hashtable->entries[slot] = ht_pair(key, value, size);
+        return;
+    }
+
+    Entry *prev;
+
+    // walk through each entry until either the end is
+    // reached or a matching key is found
+    while (entry != NULL) {
+        // check key
+        if (hashtable->comp(entry->key, key)) {
+            // match found, replace value
+            free(entry->value);
+            entry->value = value;
+            return;
         }
+
+        // walk to next
+        prev = entry;
+        entry = prev->next;
     }
 
-    free(d->table);
-    free(d);
+    // end of chain reached without a match, add new
+    prev->next = ht_pair(key, value, size);
 }
 
-#define MULTIPLIER (97)
+hashvalue ht_get(HashTable *hashtable, const hashkey key, size_t key_size) {
+    unsigned int slot = hash(key, key_size);
 
-static unsigned long hash_function(const char *s)
-{
-    unsigned const char *us;
-    unsigned long h;
+    // try to find a valid slot
+    Entry *entry = hashtable->entries[slot];
 
-    h = 0;
-
-    for(us = (unsigned const char *) s; *us; us++) {
-        h = h * MULTIPLIER + *us;
+    // no slot means no entry
+    if (entry == NULL) {
+        return NULL;
     }
 
-    return h;
-}
-
-static void dict_grow(Dict d)
-{
-    Dict d2;            /* new dictionary we'll create */
-    struct dict swap;   /* temporary structure for brain transplant */
-    int i;
-    struct elt *e;
-
-    d2 = dict_create_internal(d->size * GROWTH_FACTOR, d->comp);
-
-    for(i = 0; i < d->size; i++) {
-        for(e = d->table[i]; e != 0; e = e->next) {
-            /* note: this recopies everything */
-            /* a more efficient implementation would
-             * patch out the strdups inside dict_insert
-             * to avoid this problem */
-            dict_insert(d2, e->key, e->value);
+    // walk through each entry in the slot, which could just be a single thing
+    while (entry != NULL) {
+        // return value if found
+        if (hashtable->comp(entry->key, key)) {
+            return entry->value;
         }
+
+        // proceed to next key if available
+        entry = entry->next;
     }
 
-    /* the hideous part */
-    /* We'll swap the guts of d and d2 */
-    /* then call dict_destroy on d2 */
-    swap = *d;
-    *d = *d2;
-    *d2 = swap;
-
-    dict_destroy(d2);
+    // reaching here means there were >= 1 entries but no key match
+    return NULL;
 }
 
-/* insert a new key-value pair into an existing dictionary */
-void dict_insert(Dict d, hashkey key, hashvalue value)
-{
-    struct elt *e;
-    unsigned long h;
+void ht_del(HashTable *hashtable, const hashkey key, size_t key_size) {
+    unsigned int bucket = hash(key, key_size);
 
-    assert(key);
+    // try to find a valid bucket
+    Entry *entry = hashtable->entries[bucket];
 
-    e = malloc(sizeof(*e));
-
-    assert(e);
-
-    e->key = strdup(key);
-    e->value = value; 
-
-    h = hash_function((char *)key) % d->size;
-
-    e->next = d->table[h];
-    d->table[h] = e;
-
-    d->n++;
-
-    /* grow table if there is not enough room */
-    if(d->n >= d->size * MAX_LOAD_FACTOR) {
-        dict_grow(d);
-    }
-}
-
-/* return the most recently inserted value associated with a key */
-/* or 0 if no matching key is present */
-void *dict_search(Dict d, hashkey key)
-{
-    struct elt *e;
-    for(e = d->table[hash_function((char *) key) % d->size]; e != 0; e = e->next) {
-        if(d->comp(e->key, key)) {
-            /* got it */
-            return e->value;
-        }
+    // no bucket means no entry
+    if (entry == NULL) {
+        return;
     }
 
-    return 0;
-}
+    Entry *prev;
+    int idx = 0;
 
-/* delete the most recently inserted record with the given key */
-/* if there is no such record, has no effect */
-void dict_delete(Dict d, hashkey key)
-{
-    struct elt **prev;          /* what to change when elt is deleted */
-    struct elt *e;              /* what to delete */
+    // walk through each entry until either the end is reached or a matching key is found
+    while (entry != NULL) {
+        // check key
+        if (hashtable->comp(entry->key, key)) {
+            // first item and no next entry
+            if (entry->next == NULL && idx == 0) {
+                hashtable->entries[bucket] = NULL;
+            }
 
-    for(prev = &(d->table[hash_function((char *) key) % d->size]); 
-        *prev != 0; 
-        prev = &((*prev)->next)) {
-        if (d->comp((*prev)->key, key)){ 
-            /* got it */
-            e = *prev;
-            *prev = e->next;
+            // first item with a next entry
+            if (entry->next != NULL && idx == 0) {
+                hashtable->entries[bucket] = entry->next;
+            }
 
-            free(e->key);
-            free(e);
+            // last item
+            if (entry->next == NULL && idx != 0) {
+                prev->next = NULL;
+            }
+
+            // middle item
+            if (entry->next != NULL && idx != 0) {
+                prev->next = entry->next;
+            }
+
+            // free the deleted entry
+            free(entry->key);
+            free(entry->value);
+            free(entry);
 
             return;
         }
+
+        // walk to next
+        prev = entry;
+        entry = prev->next;
+
+        idx++;
     }
 }
+
+static void free_entry(Entry *entry){
+    if (entry == NULL){
+        return;
+    }
+    free(entry->key);
+    free(entry->value);
+    Entry *next = entry->next;
+    free(entry);
+    free_entry(next);
+}
+
+
+void ht_free(HashTable *hashtable){
+    if (hashtable == NULL){
+        return;
+    }
+    for (int i = 0; i < TABLE_SIZE; i++){
+        free_entry(hashtable->entries[i]);
+    }
+    free(hashtable->entries);
+    free(hashtable);
+}
+
+
