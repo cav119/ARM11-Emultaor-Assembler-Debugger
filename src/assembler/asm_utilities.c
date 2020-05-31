@@ -15,10 +15,6 @@
 //     return words;
 // }
 
-// int main() {
-//     char x[] = "hello there!";
-//     printf("%s\n", substring(x, 1, 3));
-//     return 0;
 // }
 
 
@@ -46,4 +42,11 @@ void print_bits(uint32_t x) {
         x = x << 1;
     }
     printf("\n");
+}
+
+void check_pointer(void *ptr, char *error_msg){
+    if (ptr == NULL){
+       puts(error_msg); 
+       exit(EXIT_FAILURE);
+    }
 }

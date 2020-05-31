@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include "assembler/asm_utilities.h"
 
 
 int count_lines(FILE *file){
@@ -55,7 +56,7 @@ int read_red_num(char *reg){
 int main(int argc, char **argv) {
     assert (argc == 3);
     FILE *file = fopen(argv[1], "r");
-
+    check_pointer(file, "File not found");
     int lines = count_lines(file);
     char **array = parse_to_array(file, lines);
     fclose(file);

@@ -19,4 +19,8 @@ uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos);
 // Prints a 32 bit number as a binary string
 void print_bits(uint32_t num);
 
+// Checks pointer, exits if it is NULL
+void check_pointer(void *ptr, char *error_msg);
+
+
 #endif
