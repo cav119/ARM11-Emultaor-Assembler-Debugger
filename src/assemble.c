@@ -54,7 +54,6 @@ int read_red_num(char *reg){
 }
 
 int main(int argc, char **argv) {
-    dict_test();
     assert (argc == 3);
     FILE *file = fopen(argv[1], "r");
     check_pointer(file, "File not found");
