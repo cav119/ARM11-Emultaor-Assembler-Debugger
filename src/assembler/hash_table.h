@@ -25,13 +25,15 @@ struct elt {
 struct dict {
     int size;           /* size of the pointer table */
     int n;              /* number of elements stored */
+    // the size in bytes of the value, NOT the pointer's value!
+    uint64_t value_size;
     int (*comp)(const void *, const void *);
     struct elt **table;
 };
 
 
 /* create a new empty dictionary */
-Dict dict_create(int (*comp)(const void *, const void *));
+Dict dict_create(int (*comp)(const void *, const void *), size_t value_size);
 
 /* destroy a dictionary */
 void dict_destroy(Dict);

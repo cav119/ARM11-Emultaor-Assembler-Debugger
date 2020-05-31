@@ -27,11 +27,12 @@ Instruction *decode_instruction(const char *instr[]){
     } else if (instr[0] == "mul" || instr[0] == "mla"){
         return encode_multiply(instr /*,symbolTable*/);
     } else if (instr[0] == "ldr" || instr[0] == "str"){
-        return encode_sdt_instr_to_binary(instr);
+        //return encode_sdt_instr_to_binary(instr);
     } else if (instr[0] == "lsl" || instr[0] == "andeq"){
-        return encode_special(instr) ;//special//
+        //return encode_special(instr) ;//special//
     } else{
-        return enoce_data_proc(instr);
+        //return enoce_data_proc(instr);
     }
+    return NULL;
     
 }
