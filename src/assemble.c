@@ -54,14 +54,9 @@ int read_red_num(char *reg){
 }
 
 
-int str_cmp(const void *arg1, const void *arg2){
-    char *str1 = (char *) arg1;
-    char *str2 = (char *) arg2;
-    return strcmp(str1, str2) == 0;
 
-}
 
-int int_ptr_cmp(const void *arg1, const void *arg2){
+static int int_ptr_cmp(const void *arg1, const void *arg2){
     char *i1 = (int *) arg1;
     char *i2 = (int *) arg2;
     return *i1 == *i2;
@@ -78,7 +73,6 @@ void test_ht(void){
    //  printf("%s\n", ht_get(ht, k1, size1));
     ht_del(ht, k1, size1);
     ht_free(ht);
-
 
 }
 
