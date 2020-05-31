@@ -73,9 +73,9 @@ void test_ht(void){
     *k1 = 12;
     size_t size1 = sizeof(int);
     ht_set(ht, k1, strdup("asdasd"), size1);
-    printf("%s\n", ht_get(ht, k1, size1));
+   // printf("%s\n", ht_get(ht, k1, size1));
     ht_set(ht, k1, strdup("mikeanike"), size1);
-    printf("%s\n", ht_get(ht, k1, size1));
+   //  printf("%s\n", ht_get(ht, k1, size1));
     ht_del(ht, k1, size1);
     ht_free(ht);
 
