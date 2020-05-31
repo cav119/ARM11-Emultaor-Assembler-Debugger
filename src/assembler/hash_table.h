@@ -2,49 +2,40 @@
 #define HASHTABLE_H
 #include <stdint.h>
 
-//base functionality imported from
-//  http://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)HashTables.html
+#define TABLE_SIZE 20000
+
+typedef struct {
+    char *key;
+    char *value;
+    struct Entry *next;
+} Entry;
+
+typedef struct {
+    Entry **entries;
+} HashTable;
 
 
-/* Creates a new Dictionary (~hashmap) with any type as key or value 
-//    but always operatoes on pointers, so if you want (int, int)
-//    you'll have to use (*int, *int)
+// Hash function 
+unsigned int hash(const char *key);
 
-*/
+// Creates a HashTable
+HashTable *ht_create(void); 
 
-typedef struct dict *Dict;
-typedef void *hashkey;
-typedef void *hashvalue;
+// sets the value of given key
+void ht_set(HashTable *hashtable, const char *key, const char *value); 
 
-struct elt {
-    struct elt *next;
-    hashkey key;
-    hashvalue value;
-};
-
-struct dict {
-    int size;           /* size of the pointer table */
-    int n;              /* number of elements stored */
-    int (*comp)(const void *, const void *);
-    struct elt **table;
-};
+// Gets the pointer to the value or NULL if failed
+char *ht_get(HashTable *hashtable, const char *key);
 
 
-/* create a new empty dictionary */
-Dict dict_create(int (*comp)(const void *, const void *));
+// Deletes the key from the table
+void ht_del(HashTable *hashtable, const char *key); 
 
-/* destroy a dictionary */
-void dict_destroy(Dict);
+// Prints contents to stdout
+void ht_dump(HashTable *hashtable); 
 
-/* insert a new key-value pair into an existing dictionary */
-void dict_insert(Dict, hashkey key, hashvalue value);
+// Test a (string, string) hashtable
+void test_ht(void);
 
-/* return the most recently inserted value associated with a key */
-/* or 0 if no matching key is present */
-void * dict_search(Dict, hashkey key);
-
-/* delete the most recently inserted record with the given key */
-/* if there is no such record, has no effect */
-void dict_delete(Dict, hashkey key);
 
 #endif
