@@ -4,32 +4,29 @@
 #include <string.h>
 
 #include "hash_table.h"
-
-unsigned int hash(const char *key) {
-    unsigned long int value = 0;
+ 
+unsigned long hash(const hashkey key, size_t size) {
+    char *char_key = (char *) key;
+    unsigned long value = 0;
     unsigned int i = 0;
-    unsigned int key_len = strlen(key);
 
     // do several rounds of multiplication
-    for (; i < key_len; ++i) {
-        value = value * 37 + key[i];
+    for (; i < size; i++) {
+        value = value * 37 + char_key[i];
     }
 
     // make sure value is 0 <= value < TABLE_SIZE
     value = value % TABLE_SIZE;
 
     return value;
-}
+} 
 
-Entry *ht_pair(const char *key, const char *value) {
+Entry *ht_pair(const hashkey key, const hashkey value, size_t key_size) {
     // allocate the entry
-    Entry *entry = malloc(sizeof(Entry) * 1);
-    entry->key = malloc(strlen(key) + 1);
-    entry->value = malloc(strlen(value) + 1);
-
-    // copy the key and value in place
-    strcpy(entry->key, key);
-    strcpy(entry->value, value);
+    Entry *entry = malloc(sizeof(Entry));
+    entry->key = key;
+    entry->value = value;
+    entry->key_size = key_size;
 
     // next starts out null but may be set later on
     entry->next = NULL;
@@ -37,10 +34,10 @@ Entry *ht_pair(const char *key, const char *value) {
     return entry;
 }
 
-HashTable *ht_create(void) {
+HashTable *ht_create(int (*comp)(const void*, const void*)) {
     // allocate table
-    HashTable *hashtable = malloc(sizeof(HashTable) * 1);
-
+    HashTable *hashtable = malloc(sizeof(HashTable));
+    hashtable->comp = comp;
     // allocate table entries
     hashtable->entries = malloc(sizeof(Entry*) * TABLE_SIZE);
 
@@ -53,15 +50,15 @@ HashTable *ht_create(void) {
     return hashtable;
 }
 
-void ht_set(HashTable *hashtable, const char *key, const char *value) {
-    unsigned int slot = hash(key);
+void ht_set(HashTable *hashtable, const hashkey key, const hashvalue value, size_t size) {
+    unsigned long slot = hash(key, size);
 
     // try to look up an entry set
     Entry *entry = hashtable->entries[slot];
 
     // no entry means slot empty, insert immediately
     if (entry == NULL) {
-        hashtable->entries[slot] = ht_pair(key, value);
+        hashtable->entries[slot] = ht_pair(key, value, size);
         return;
     }
 
@@ -71,11 +68,10 @@ void ht_set(HashTable *hashtable, const char *key, const char *value) {
     // reached or a matching key is found
     while (entry != NULL) {
         // check key
-        if (strcmp(entry->key, key) == 0) {
+        if (hashtable->comp(entry->key, key)) {
             // match found, replace value
             free(entry->value);
-            entry->value = malloc(strlen(value) + 1);
-            strcpy(entry->value, value);
+            entry->value = value;
             return;
         }
 
@@ -85,11 +81,11 @@ void ht_set(HashTable *hashtable, const char *key, const char *value) {
     }
 
     // end of chain reached without a match, add new
-    prev->next = ht_pair(key, value);
+    prev->next = ht_pair(key, value, size);
 }
 
-char *ht_get(HashTable *hashtable, const char *key) {
-    unsigned int slot = hash(key);
+hashvalue ht_get(HashTable *hashtable, const hashkey key, size_t key_size) {
+    unsigned int slot = hash(key, key_size);
 
     // try to find a valid slot
     Entry *entry = hashtable->entries[slot];
@@ -102,7 +98,7 @@ char *ht_get(HashTable *hashtable, const char *key) {
     // walk through each entry in the slot, which could just be a single thing
     while (entry != NULL) {
         // return value if found
-        if (strcmp(entry->key, key) == 0) {
+        if (hashtable->comp(entry->key, key)) {
             return entry->value;
         }
 
@@ -114,8 +110,8 @@ char *ht_get(HashTable *hashtable, const char *key) {
     return NULL;
 }
 
-void ht_del(HashTable *hashtable, const char *key) {
-    unsigned int bucket = hash(key);
+void ht_del(HashTable *hashtable, const hashkey key, size_t key_size) {
+    unsigned int bucket = hash(key, key_size);
 
     // try to find a valid bucket
     Entry *entry = hashtable->entries[bucket];
@@ -131,7 +127,7 @@ void ht_del(HashTable *hashtable, const char *key) {
     // walk through each entry until either the end is reached or a matching key is found
     while (entry != NULL) {
         // check key
-        if (strcmp(entry->key, key) == 0) {
+        if (hashtable->comp(entry->key, key)) {
             // first item and no next entry
             if (entry->next == NULL && idx == 0) {
                 hashtable->entries[bucket] = NULL;
@@ -164,44 +160,31 @@ void ht_del(HashTable *hashtable, const char *key) {
         prev = entry;
         entry = prev->next;
 
-        ++idx;
+        idx++;
     }
 }
 
-void ht_dump(HashTable *hashtable) {
-    for (int i = 0; i < TABLE_SIZE; ++i) {
-        Entry *entry = hashtable->entries[i];
-
-        if (entry == NULL) {
-            continue;
-        }
-
-        printf("slot[%4d]: ", i);
-
-        for(;;) {
-            printf("%s=%s ", entry->key, entry->value);
-
-            if (entry->next == NULL) {
-                break;
-            }
-
-            entry = entry->next;
-        }
-
-        printf("\n");
+static void free_entry(Entry *entry){
+    if (entry == NULL){
+        return;
     }
+    free(entry->key);
+    free(entry->value);
+    Entry *next = entry->next;
+    free(entry);
+    free_entry(next);
 }
 
-void test_ht(void){
 
-    HashTable *ht = ht_create(); 
-    ht_set(ht, "name1", "em");
-    ht_set(ht, "name2", "russian");
-    ht_set(ht, "name3", "pizza");
-    ht_set(ht, "name4", "doge");
-    ht_set(ht, "name5", "pyro");
-    ht_set(ht, "name6", "joost");
-    ht_set(ht, "name7", "kalix");
-
-    ht_dump(ht);
+void ht_free(HashTable *hashtable){
+    if (hashtable == NULL){
+        return;
+    }
+    for (int i = 0; i < TABLE_SIZE; i++){
+        free_entry(hashtable->entries[i]);
+    }
+    free(hashtable->entries);
+    free(hashtable);
 }
+
+
