@@ -4,9 +4,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "asm_utilities.h"
 
 
-void print_bits(uint32_t x);
+
 
 // should make a very useful function:
 
@@ -189,18 +190,3 @@ void set_address_bits(const char *token, uint32_t *bin_code) {
 
 
 
-void print_bits(uint32_t x) {
-    int i;
-    uint32_t mask = 1 << 31;
-
-    for(i=0; i<32; ++i) {
-        if((x & mask) == 0){
-            printf("0");
-        }
-        else {
-            printf("1");
-        }
-        x = x << 1;
-    }
-    printf("\n");
-}
