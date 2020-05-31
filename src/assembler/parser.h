@@ -1,11 +1,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <stdlib.h>
-#include <string.h>
 #include "file_io.h"
 #include "type_defs.h"
-
 
 
 

@@ -1,7 +1,6 @@
 #include <assert.h>
 #include "file_io.h"
 #include "asm_utilities.h"
-#include <stdlib.h>
 
 #define MAX_LINE_LENGTH 512
 

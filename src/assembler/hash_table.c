@@ -13,7 +13,7 @@
 
 
 /* dictionary initialization code used in both dict_create and grow */
-Dict dict_create_internal(int size, int (*comp)(const void *, const void *), size_t value_size)
+Dict dict_create_internal(int size, int (*comp)(const void *, const void *))
 {
     Dict d;
     int i;
@@ -26,7 +26,6 @@ Dict dict_create_internal(int size, int (*comp)(const void *, const void *), siz
     d->n = 0;
     d->table = malloc(sizeof(struct elt *) * d->size);
     d->comp = comp;
-    d->value_size = value_size;
     assert(d->table != 0);
 
     for(i = 0; i < d->size; i++) d->table[i] = 0;
@@ -35,8 +34,8 @@ Dict dict_create_internal(int size, int (*comp)(const void *, const void *), siz
 }
 
 // creates a dictionary with a comparator function
-Dict dict_create(int (*comp)(const void *, const void *), size_t value_size) {
-    return dict_create_internal(INITIAL_SIZE, comp, value_size);
+Dict dict_create(int (*comp)(const void *, const void *)) {
+    return dict_create_internal(INITIAL_SIZE, comp);
 }
 
 void dict_destroy(Dict d)
@@ -60,15 +59,15 @@ void dict_destroy(Dict d)
 
 #define MULTIPLIER (97)
 
-static unsigned long hash_function(const char *s, size_t value_size){
+static unsigned long hash_function(const char *s)
+{
     unsigned const char *us;
     unsigned long h;
 
     h = 0;
-    size_t curr_size = 0;
-    for(us = (unsigned const char *) s; curr_size < value_size; us++) {
+
+    for(us = (unsigned const char *) s; *us; us++) {
         h = h * MULTIPLIER + *us;
-        curr_size++;
     }
 
     return h;
@@ -80,9 +79,8 @@ static void dict_grow(Dict d)
     struct dict swap;   /* temporary structure for brain transplant */
     int i;
     struct elt *e;
-    
 
-    d2 = dict_create_internal(d->size * GROWTH_FACTOR, d->comp, d->value_size);
+    d2 = dict_create_internal(d->size * GROWTH_FACTOR, d->comp);
 
     for(i = 0; i < d->size; i++) {
         for(e = d->table[i]; e != 0; e = e->next) {
@@ -119,8 +117,7 @@ void dict_insert(Dict d, hashkey key, hashvalue value)
     e->key = strdup(key);
     e->value = value; 
 
-    h = hash_function((char *)key, d->value_size) % d->size;
-
+    h = hash_function((char *)key) % d->size;
 
     e->next = d->table[h];
     d->table[h] = e;
@@ -138,7 +135,7 @@ void dict_insert(Dict d, hashkey key, hashvalue value)
 void *dict_search(Dict d, hashkey key)
 {
     struct elt *e;
-    for(e = d->table[hash_function((char *) key, d->value_size) % d->size]; e != 0; e = e->next) {
+    for(e = d->table[hash_function((char *) key) % d->size]; e != 0; e = e->next) {
         if(d->comp(e->key, key)) {
             /* got it */
             return e->value;
@@ -155,7 +152,7 @@ void dict_delete(Dict d, hashkey key)
     struct elt **prev;          /* what to change when elt is deleted */
     struct elt *e;              /* what to delete */
 
-    for(prev = &(d->table[hash_function((char *) key, d->value_size) % d->size]); 
+    for(prev = &(d->table[hash_function((char *) key) % d->size]); 
         *prev != 0; 
         prev = &((*prev)->next)) {
         if (d->comp((*prev)->key, key)){ 
