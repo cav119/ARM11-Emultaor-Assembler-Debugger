@@ -65,7 +65,7 @@ static HashTable *init_rule_hash(){
 
 uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
                 , WaitingBranchInstr **waiting_branches, int *waiting_br_size, bool *label_next_instr,
-                              char *waiting_label, bool *succeeded){
+                              char *waiting_label){ 
     uint32_t *instr = malloc(UI32);
     HashTable *codes_maps = init_rule_hash();
     if (code[1] == NULL){
@@ -98,7 +98,6 @@ uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
         if (ht_get(symbol_table, label, hash_str_size(label))){
             // calculate offset according to current line number
             // and offset line number and subtract 8
-            *succeeded = true;
         }
         else {
             WaitingBranchInstr *wait_br = malloc(sizeof(WaitingBranchInstr));

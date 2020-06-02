@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "asm_branch_instr.h"
 #include "asm_multiply_instr.h"
+#include "asm_branch_instr.h"
 
 #define MAX_WAITING_BRANCHES (50)
 #define LINE_SIZE (512)
@@ -71,8 +72,9 @@ uint32_t *decode_instruction(const char *instr[], long *instr_number,
         put_instr_to_label(label_next_instr, instr_number, symbol_table, waiting_label);
         bool succeeded = false;
         encode_branch_instr(instr, symbol_table, waiting_branches
-                , wait_br_size, label_next_instr, waiting_label, &succeeded);
-        if (succeeded){
+                , wait_br_size, label_next_instr, waiting_label);
+        if (instr[1] != NULL){
+            // not a label
             *instr_number += 4;
         }
         // Branch instr

@@ -12,6 +12,6 @@
 // reading the 5 strings from the code
 uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
         , WaitingBranchInstr  **waiting_branches, int *waiting_br_size, bool *label_next_instr
-        , char *waiting_label, bool *succeeded);
+        , char *waiting_label);
 
 #endif
