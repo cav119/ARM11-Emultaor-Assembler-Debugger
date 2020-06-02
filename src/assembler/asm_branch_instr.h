@@ -1,12 +1,17 @@
 #ifndef ASM_BRANCH_H
 #define ASM_BRANCH_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "asm_utilities.h"
 #include "type_defs.h"
 #include "hash_table.h"
 
 // returns a pointer to an Instruction that forms from 
 // reading the 5 strings from the code
-Instruction *decode_branch_instr_to_bin(char code[5][512], HashTable *label_table
-        , HashTable *waiting_labels, int current_line);
+uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
+        , WaitingBranchInstr  **waiting_branches, int *waiting_br_size, bool *label_next_instr
+        , char *waiting_label);
 
 #endif

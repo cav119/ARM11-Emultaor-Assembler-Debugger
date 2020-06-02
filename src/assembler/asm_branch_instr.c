@@ -14,6 +14,7 @@
 #define LE_CODE (13)
 
 #define AL_CODE (14)
+#define UI32 (sizeof(uint32_t))
 
 // comprator function for hash, required by dict_create
 static int compare_str(const void *s1, const void *s2){
@@ -22,92 +23,92 @@ static int compare_str(const void *s1, const void *s2){
     return strcmp(str1, str2) == 0;
 }
 
-static size_t str_size(char *str){
-    return sizeof(char) * (strlen(str) + 1);
-}
+
 
 static HashTable *init_rule_hash(){
     HashTable *hash_table = ht_create(compare_str);
     // Inserts the suffixes and corresponding codes
     // for the branch instruction
-    size_t code_str_size = sizeof(char) * 3;
-    size_t ui32 = sizeof(uint32_t);
+    size_t code_str_size = sizeof(char) * 2;
 
-    uint32_t *eq_ptr = malloc(ui32);
+    uint32_t *eq_ptr = malloc(UI32);
     *eq_ptr = EQ_CODE;
 
-    uint32_t *ne_ptr = malloc(ui32);
+    uint32_t *ne_ptr = malloc(UI32);
     *ne_ptr = NE_CODE;
 
-    uint32_t *ge_ptr = malloc(ui32);
+    uint32_t *ge_ptr = malloc(UI32);
     *ge_ptr = GE_CODE;
 
-    uint32_t *lt_ptr = malloc(ui32);
+    uint32_t *lt_ptr = malloc(UI32);
     *lt_ptr = LT_CODE;
 
-    uint32_t *gt_ptr = malloc(ui32);
+    uint32_t *gt_ptr = malloc(UI32);
     *gt_ptr = GT_CODE;
 
-    uint32_t *le_ptr = malloc(ui32);
+    uint32_t *le_ptr = malloc(UI32);
     *le_ptr = LE_CODE;
 
-    uint32_t *al_ptr = malloc(ui32);
+    uint32_t *al_ptr = malloc(UI32);
     *al_ptr = AL_CODE;
 
-    ht_set(hash_table, strdup("eq") ,eq_ptr, ui32);
-    ht_set(hash_table, strdup("ne"), ne_ptr, ui32);
-    ht_set(hash_table, strdup("ge"), ge_ptr, ui32);
-    ht_set(hash_table, strdup("lt"), lt_ptr, ui32);
-    ht_set(hash_table, strdup("gt"), gt_ptr, ui32);
-    ht_set(hash_table, strdup("le"), le_ptr, ui32);
-    ht_set(hash_table, strdup("al"), al_ptr, ui32);
+    ht_set(hash_table, str_clone("eq") ,eq_ptr, code_str_size);
+    ht_set(hash_table, str_clone("ne"), ne_ptr, code_str_size);
+    ht_set(hash_table, str_clone("ge"), ge_ptr, code_str_size);
+    ht_set(hash_table, str_clone("lt"), lt_ptr, code_str_size);
+    ht_set(hash_table, str_clone("gt"), gt_ptr, code_str_size);
+    ht_set(hash_table, str_clone("le"), le_ptr, code_str_size);
+    ht_set(hash_table, str_clone("al"), al_ptr, code_str_size);
     return hash_table;
 }
 
 
-Instruction *decode_branch_instr_to_bin(char code[5][512], HashTable *label_table
-                , HashTable *waiting_labels, int current_line){
+uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
+                , WaitingBranchInstr **waiting_branches, int *waiting_br_size, bool *label_next_instr,
+                              char *waiting_label){ 
+    uint32_t *instr = malloc(UI32);
     HashTable *codes_maps = init_rule_hash();
-    char *rule = strdup(code[0]);
-    if (rule[0] != 'b'){
+    if (code[1] == NULL){
         // must be a label, not a jump
-        char *label = strdup(code[0]);
-        /*
-            inserts label to the table
-            or alternatively sends a message to the caller 
-            that we hit a label and the next valid instruction that is reached
-            should be the pointer, which would be way better
-        if (label_table != NULL){
-            ht_set(label_table, strdup(label), current_line+4); 
-        }
-
-        */
-        free(label);
-
+        char *label = str_clone(code[0]);
+        
+        // the line where the label points
+        long *pointing_line = calloc(1, sizeof(long));
+        *label_next_instr = true;
+        ht_set(symbol_table, label, pointing_line, hash_str_size(label));
+        strcpy(waiting_label, label);
     }
     else {
         // get the condition
-        char cond[2] = {code[0][1], code[0][2], '\0'};
-        uint32_t int_code = *( (int *)ht_get(codes_maps, cond, sizeof(char) * 3) );
-        // see the label
-        char *label = strdup(code[1]);
-        //check against list of labels and see whether it's inside
-        uint32_t instr = int_code << 28;
-        instr |= 10 << 24; // 1010 at bits 27-24
-        if (label_table != NULL && ht_get(label_table, label, str_size(label))){
-            // calculate offset according to current line number
-            // and offset line number and subtract 8 
+        uint32_t int_code;
+        if (code[0][1] != '\0') {
+            char cond[2] = {code[0][1], code[0][2], '\0'};
+
+            int_code = *((int *) ht_get(codes_maps, cond, sizeof(char) * 2));
         }
         else {
-            if (waiting_labels != NULL){
-                // adds to waiting labels the name of the label and the 
-                // current line  
-            }
+            // always branch
+            int_code = AL_CODE;
         }
-        free(label);
+        // see the label
+        char *label = str_clone(code[1]);
+        //check against list of labels and see whether it's inside
+        *instr = int_code << 28;
+        *instr = *instr | (10 << 24); // 1010 at bits 27-24
+        if (ht_get(symbol_table, label, hash_str_size(label))){
+            // calculate offset according to current line number
+            // and offset line number and subtract 8
+        }
+        else {
+            WaitingBranchInstr *wait_br = malloc(sizeof(WaitingBranchInstr));
+            wait_br->name = str_clone(label);
+            wait_br->instruction = instr;
+            waiting_branches[*waiting_br_size] = wait_br;
+            *waiting_br_size = *waiting_br_size + 1;
+            // add wait_br to the waiting instruction list;
+        }
     }
     ht_free(codes_maps);
-    free(rule);
     return 0;
 }
 
