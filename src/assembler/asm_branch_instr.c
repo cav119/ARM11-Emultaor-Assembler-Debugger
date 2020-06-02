@@ -73,10 +73,15 @@ uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
         char *label = str_clone(code[0]);
         
         // the line where the label points
-        long *pointing_line = calloc(1, sizeof(long));
+        long *pointing_line = malloc(sizeof(long));
+        // so that we know the label's instr line is not known yet 
+        *pointing_line = -1;
+
         *label_next_instr = true;
         ht_set(symbol_table, label, pointing_line, hash_str_size(label));
         strcpy(waiting_label, label);
+        ht_free(codes_maps);
+        return NULL;
     }
     else {
         // get the condition
@@ -107,6 +112,7 @@ uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
             *waiting_br_size = *waiting_br_size + 1;
             // add wait_br to the waiting instruction list;
         }
+        free(label);
     }
     ht_free(codes_maps);
     return 0;

@@ -47,14 +47,23 @@ void put_instr_to_label(bool *label_next_instr, long curr_number, HashTable *sym
 }
 
 
+static void free_waiting_branch(WaitingBranchInstr *waiting){
+    free(waiting->name);
+    // do not free instruction code since it is used later
+    free(waiting);
+}
+
 static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_size, WaitingBranchInstr **waiting_branches){
     for (int i = 0; i < *wait_br_size; i++){
         WaitingBranchInstr *br_inst = waiting_branches[i];
         char *key = br_inst->name;
-        long *label_line; 
-        if (label_line = ht_get(symbol_table, key, hash_str_size(key))){
+        long *label_line = ht_get(symbol_table, key, hash_str_size(key)); 
+        // The label's instruction line has been defined
+        if (label_line != NULL && *label_line != -1){
             // found label 
-            printf("%x\n", *label_line);
+            *wait_br_size = *wait_br_size - 1;
+            free_waiting_branch(br_inst);
+            printf("Found missing label %s which points to instruction 0x%.8x\n", key, *label_line);
         }
     }
 
