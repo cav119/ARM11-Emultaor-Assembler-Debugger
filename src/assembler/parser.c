@@ -2,7 +2,8 @@
 #include "asm_branch_instr.h"
 #include "asm_multiply_instr.h"
 
-#define LINE_SIZE 512 
+#define MAX_WAITING_BRANCHES (50)
+#define LINE_SIZE (512)
 
 char **instr_to_tokens(char array[]){
     char **words = calloc(5, LINE_SIZE);
@@ -34,19 +35,32 @@ static int str_comp(const void *arg1, const void *arg2){
 
 }
 
+void put_instr_to_label(bool *label_next_instr, long curr_number, HashTable *symbol_table, char *label){
+    if (! (*label_next_instr) ){
+        return;
+    }
+    *label_next_instr = false;
+    long *line = malloc(sizeof(long));
+    *line = curr_number;
+    ht_set(symbol_table, label, line, hash_str_size(label));
+}
 
 uint32_t *decode_instruction(const char *instr[], long *instr_number,
-                                HashTable *symbol_table, HashTable *waiting_branches,
-                                bool *label_next_instr){
+                                HashTable *symbol_table, WaitingBranchInstr *waiting_branches,
+                                int *wait_br_size, bool *label_next_instr, char *waiting_label){
 /*    if (instr[2] == "\0") {
         return decode_branch_instr_to_bin(instr);
 */
+
     if (same_str(instr[0], "mul") || same_str(instr[0], "mla")){
-        *instr_number += 4;
         // Multiply instr
+        put_instr_to_label(label_next_instr, instr_number, symbol_table, waiting_label);
+        *instr_number += 4;
+
     }
     else if (same_str(instr[0], "ldr") || same_str(instr[0], "str")){
         // Single data transfer instr
+        put_instr_to_label(label_next_instr, instr_number, symbol_table, waiting_label);
         *instr_number += 4;
     }
     else if (same_str(instr[0], "lsl") || same_str(instr[0], "andeq")){
@@ -55,11 +69,12 @@ uint32_t *decode_instruction(const char *instr[], long *instr_number,
 
     }
     else if (instr[0][0] == 'b' || instr[1] == NULL){
+        put_instr_to_label(label_next_instr, instr_number, symbol_table, waiting_label);
         // Branch instr
-        
     }
     else {
         // Data processing instr
+        put_instr_to_label(label_next_instr, instr_number, symbol_table, waiting_label);
         *instr_number += 4;
     }
     return 0;
@@ -80,10 +95,13 @@ static int cmp_waiting_branches(const void *arg1, const void *arg2){
 
 void encode_file_lines(char **lines, size_t nlines){
     char **array_of_words[nlines];
-    
+    char *waiting_label = malloc(sizeof(char) * LINE_SIZE);
+    WaitingBranchInstr *waiting_branches = calloc(MAX_WAITING_BRANCHES, sizeof(WaitingBranchInstr));
+
+    int *waiting_br_size = malloc(sizeof(int));
+    *waiting_br_size = 0;
     // where the instruction sits in memory
     HashTable *symbol_table = ht_create(str_comp);
-    HashTable *waiting_branches = ht_create(cmp_waiting_branches);
     long current_line = 0;
 
     // checks if a label needs to be found
@@ -91,7 +109,8 @@ void encode_file_lines(char **lines, size_t nlines){
     *next_instr_to_label = false;
     for (int i = 0; i < nlines; i++) {
       array_of_words[i] = instr_to_tokens(lines[i]);
-      uint32_t *instr = decode_instruction(array_of_words[i], &current_line, symbol_table, waiting_branches, next_instr_to_label);
+      uint32_t *instr = decode_instruction(array_of_words[i], &current_line, symbol_table,
+                        waiting_branches, waiting_br_size, next_instr_to_label, waiting_label);
     }
 
     for (int i = 0; i < nlines; i++) {

@@ -64,7 +64,9 @@ static HashTable *init_rule_hash(){
 
 
 uint32_t *decode_branch_instr_to_bin(char code[5][512], HashTable *label_table
-                , HashTable *waiting_branch_instr, int current_line, bool *label_next_instr){
+                , WaitingBranchInstr **waiting_branch_instr, int *waiting_br_size, int current_line, bool *label_next_instr,
+                char *waiting_label){
+    uint32_t *instr = malloc(UI32);
     HashTable *codes_maps = init_rule_hash();
     char *rule = strdup(code[0]);
     if (rule[0] != 'b'){
@@ -74,26 +76,31 @@ uint32_t *decode_branch_instr_to_bin(char code[5][512], HashTable *label_table
         // the line where the label points
         long *pointing_line = calloc(1, sizeof(long));
         *label_next_instr = true;
-        ht_set(label_table, label, pointing_line, str_size(label));
+        ht_set(label_table, label, pointing_line, hash_str_size(label));
+        strcpy(waiting_label, label);
 
     }
     else {
         // get the condition
         char cond[2] = {code[0][1], code[0][2], '\0'};
-        uint32_t int_code = *( (int *)ht_get(codes_maps, cond, sizeof(char) * 3) );
+        uint32_t *int_code = *( (int *)ht_get(codes_maps, cond, sizeof(char) * 2) );
         // see the label
         char *label = strdup(code[1]);
         //check against list of labels and see whether it's inside
-        uint32_t instr = int_code << 28;
-        instr |= 10 << 24; // 1010 at bits 27-24
-        if (label_table != NULL && ht_get(label_table, label, str_size(label))){
+        *instr = *int_code << 28;
+        *instr = *instr | (10 << 24); // 1010 at bits 27-24
+        if (label_table != NULL && ht_get(label_table, label, hash_str_size(label))){
             // calculate offset according to current line number
             // and offset line number and subtract 8 
         }
         else {
-
+            WaitingBranchInstr *wait_br = malloc(sizeof(WaitingBranchInstr));
+            wait_br->name = label;
+            wait_br->instruction = instr;
+            waiting_branch_instr[*waiting_br_size] = wait_br;
+            *waiting_br_size = *waiting_br_size + 1;
+            // add wait_br to the waiting instruction list;
         }
-        free(label);
     }
     ht_free(codes_maps);
     free(rule);

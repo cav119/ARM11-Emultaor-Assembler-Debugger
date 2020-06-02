@@ -24,7 +24,7 @@ void print_bits(uint32_t num);
 void check_pointer(void *ptr, char *error_msg);
 
 // Returns the size of a string
-size_t str_size(char *str);
+size_t hash_str_size(char *str);
 
 
 #endif
