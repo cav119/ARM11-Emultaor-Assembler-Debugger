@@ -1,6 +1,7 @@
 #ifndef ASM_UTILITIES_H
 #define ASM_UTILITIES_H
 #include <stdint.h>
+#include <stdlib.h>
 
 // String utility functions (used throughout the program)
 
@@ -21,6 +22,9 @@ void print_bits(uint32_t num);
 
 // Checks pointer, exits if it is NULL
 void check_pointer(void *ptr, char *error_msg);
+
+// Returns the size of a string
+size_t str_size(char *str);
 
 
 #endif

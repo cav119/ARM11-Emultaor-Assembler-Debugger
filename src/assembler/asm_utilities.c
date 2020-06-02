@@ -50,3 +50,10 @@ void check_pointer(void *ptr, char *error_msg){
        exit(EXIT_FAILURE);
     }
 }
+
+size_t str_size(char *str){
+    if (str == NULL){
+        return 0;
+    }
+    return sizeof(char) * (strlen(str) + 1);
+}

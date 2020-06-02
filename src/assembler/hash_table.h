@@ -16,6 +16,7 @@ typedef struct {
 } Entry;
 
 // table of entries with a comparator function
+// which returns true if the params are equal, false otherwise
 typedef struct {
     int (*comp)(const void *, const void *);
     Entry **entries;
