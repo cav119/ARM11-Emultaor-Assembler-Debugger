@@ -46,15 +46,12 @@ void put_instr_to_label(bool *label_next_instr, long curr_number, HashTable *sym
 }
 
 uint32_t *decode_instruction(const char *instr[], long *instr_number,
-                                HashTable *symbol_table, WaitingBranchInstr *waiting_branches,
+                                HashTable *symbol_table, WaitingBranchInstr **waiting_branches,
                                 int *wait_br_size, bool *label_next_instr, char *waiting_label){
-/*    if (instr[2] == "\0") {
-        return decode_branch_instr_to_bin(instr);
-*/
 
     if (same_str(instr[0], "mul") || same_str(instr[0], "mla")){
         // Multiply instr
-        put_instr_to_label(label_next_instr, instr_number, symbol_table, waiting_label);
+        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_label);
         *instr_number += 4;
 
     }
@@ -68,8 +65,16 @@ uint32_t *decode_instruction(const char *instr[], long *instr_number,
         *instr_number += 4;
 
     }
+    // branch instrucntion or label
     else if (instr[0][0] == 'b' || instr[1] == NULL){
+        
         put_instr_to_label(label_next_instr, instr_number, symbol_table, waiting_label);
+        bool succeeded = false;
+        encode_branch_instr(instr, symbol_table, waiting_branches
+                , wait_br_size, label_next_instr, waiting_label, &succeeded);
+        if (succeeded){
+            *instr_number += 4;
+        }
         // Branch instr
     }
     else {
@@ -95,6 +100,7 @@ static int cmp_waiting_branches(const void *arg1, const void *arg2){
 
 void encode_file_lines(char **lines, size_t nlines){
     char **array_of_words[nlines];
+    uint32_t *instructions = malloc(nlines * sizeof(uint32_t));
     char *waiting_label = malloc(sizeof(char) * LINE_SIZE);
     WaitingBranchInstr *waiting_branches = calloc(MAX_WAITING_BRANCHES, sizeof(WaitingBranchInstr));
 

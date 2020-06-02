@@ -10,7 +10,8 @@
 
 // returns a pointer to an Instruction that forms from 
 // reading the 5 strings from the code
-uint32_t *decode_branch_instr_to_bin(char code[5][512], HashTable *symbol_table
-        , WaitingBranchInstr  **waiting_labels, int *waiting_br_size, int current_line, bool *label_next_instr, char *waiting_label);
+uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
+        , WaitingBranchInstr  **waiting_branches, int *waiting_br_size, bool *label_next_instr
+        , char *waiting_label, bool *succeeded);
 
 #endif

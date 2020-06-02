@@ -26,5 +26,8 @@ void check_pointer(void *ptr, char *error_msg);
 // Returns the size of a string
 size_t hash_str_size(char *str);
 
+//duplicate of the string allocated on heap
+char *str_clone(const char* src);
+
 
 #endif

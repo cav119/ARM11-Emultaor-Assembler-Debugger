@@ -29,7 +29,7 @@ static HashTable *init_rule_hash(){
     HashTable *hash_table = ht_create(compare_str);
     // Inserts the suffixes and corresponding codes
     // for the branch instruction
-    size_t code_str_size = sizeof(char) * 3;
+    size_t code_str_size = sizeof(char) * 2;
 
     uint32_t *eq_ptr = malloc(UI32);
     *eq_ptr = EQ_CODE;
@@ -52,58 +52,64 @@ static HashTable *init_rule_hash(){
     uint32_t *al_ptr = malloc(UI32);
     *al_ptr = AL_CODE;
 
-    ht_set(hash_table, strdup("eq") ,eq_ptr, UI32);
-    ht_set(hash_table, strdup("ne"), ne_ptr, UI32);
-    ht_set(hash_table, strdup("ge"), ge_ptr, UI32);
-    ht_set(hash_table, strdup("lt"), lt_ptr, UI32);
-    ht_set(hash_table, strdup("gt"), gt_ptr, UI32);
-    ht_set(hash_table, strdup("le"), le_ptr, UI32);
-    ht_set(hash_table, strdup("al"), al_ptr, UI32);
+    ht_set(hash_table, str_clone("eq") ,eq_ptr, code_str_size);
+    ht_set(hash_table, str_clone("ne"), ne_ptr, code_str_size);
+    ht_set(hash_table, str_clone("ge"), ge_ptr, code_str_size);
+    ht_set(hash_table, str_clone("lt"), lt_ptr, code_str_size);
+    ht_set(hash_table, str_clone("gt"), gt_ptr, code_str_size);
+    ht_set(hash_table, str_clone("le"), le_ptr, code_str_size);
+    ht_set(hash_table, str_clone("al"), al_ptr, code_str_size);
     return hash_table;
 }
 
 
-uint32_t *decode_branch_instr_to_bin(char code[5][512], HashTable *label_table
-                , WaitingBranchInstr **waiting_branch_instr, int *waiting_br_size, int current_line, bool *label_next_instr,
-                char *waiting_label){
+uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
+                , WaitingBranchInstr **waiting_branches, int *waiting_br_size, bool *label_next_instr,
+                              char *waiting_label, bool *succeeded){
     uint32_t *instr = malloc(UI32);
     HashTable *codes_maps = init_rule_hash();
-    char *rule = strdup(code[0]);
-    if (rule[0] != 'b'){
+    if (code[1] == NULL){
         // must be a label, not a jump
-        char *label = strdup(code[0]);
+        char *label = str_clone(code[0]);
         
         // the line where the label points
         long *pointing_line = calloc(1, sizeof(long));
         *label_next_instr = true;
-        ht_set(label_table, label, pointing_line, hash_str_size(label));
+        ht_set(symbol_table, label, pointing_line, hash_str_size(label));
         strcpy(waiting_label, label);
-
     }
     else {
         // get the condition
-        char cond[2] = {code[0][1], code[0][2], '\0'};
-        uint32_t *int_code = *( (int *)ht_get(codes_maps, cond, sizeof(char) * 2) );
+        uint32_t int_code;
+        if (code[0][1] != '\0') {
+            char cond[2] = {code[0][1], code[0][2], '\0'};
+
+            int_code = *((int *) ht_get(codes_maps, cond, sizeof(char) * 2));
+        }
+        else {
+            // always branch
+            int_code = AL_CODE;
+        }
         // see the label
-        char *label = strdup(code[1]);
+        char *label = str_clone(code[1]);
         //check against list of labels and see whether it's inside
-        *instr = *int_code << 28;
+        *instr = int_code << 28;
         *instr = *instr | (10 << 24); // 1010 at bits 27-24
-        if (label_table != NULL && ht_get(label_table, label, hash_str_size(label))){
+        if (ht_get(symbol_table, label, hash_str_size(label))){
             // calculate offset according to current line number
-            // and offset line number and subtract 8 
+            // and offset line number and subtract 8
+            *succeeded = true;
         }
         else {
             WaitingBranchInstr *wait_br = malloc(sizeof(WaitingBranchInstr));
-            wait_br->name = label;
+            wait_br->name = str_clone(label);
             wait_br->instruction = instr;
-            waiting_branch_instr[*waiting_br_size] = wait_br;
+            waiting_branches[*waiting_br_size] = wait_br;
             *waiting_br_size = *waiting_br_size + 1;
             // add wait_br to the waiting instruction list;
         }
     }
     ht_free(codes_maps);
-    free(rule);
     return 0;
 }
 

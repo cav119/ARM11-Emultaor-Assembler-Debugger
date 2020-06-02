@@ -57,3 +57,18 @@ size_t hash_str_size(char *str){
     }
     return sizeof(char) * (strlen(str));
 }
+
+
+char *str_clone(const char *src){
+    if (src == NULL){
+        perror("You tried to clone NULL string");
+    }
+    int len = strlen(src);
+    char *clone = malloc(sizeof(char) * (len + 1));
+    for (int i = 0; i < len; i++){
+        clone[i] = src[i];
+    }
+    clone[len] = '\0';
+    return clone;
+}
+
