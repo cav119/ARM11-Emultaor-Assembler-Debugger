@@ -31,14 +31,3 @@ char **parse_to_array(FILE *file, int lines){
     return array;
 }
 
-char **line_to_words(char array[]){
-    char **words = calloc(5, MAX_LINE_LENGTH);
-    char *arr = strtok(array, " ,:\n");
-    int i = 0;
-    while (arr != NULL){
-        words[i] = arr;
-        arr = strtok(NULL, " ,:\n");
-        i++;
-    }
-    return words;
-}

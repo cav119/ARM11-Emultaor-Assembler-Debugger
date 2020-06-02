@@ -7,6 +7,7 @@
 #include "assembler/asm_utilities.h"
 #include "assembler/hash_table.h"
 #include "assembler/file_io.h"
+#include "assembler/parser.h"
 
 
 
@@ -45,21 +46,21 @@ int main(int argc, char **argv) {
     assert (argc == 3);
     FILE *file = fopen(argv[1], "r");
     check_pointer(file, "File not found");
-    int lines = count_lines(file);
-    char **array = parse_to_array(file, lines);
+    int line_number = count_lines(file);
+    char **lines = parse_to_array(file, line_number);
     fclose(file);
 
-    char **array_of_words[lines];
+    char **array_of_words[line_number];
 
-    for(int i = 0; i < lines; i++){
-        array_of_words[i] = line_to_words(array[i]);
+    for (int i = 0; i < line_number; i++) {
+      array_of_words[i] = instr_to_tokens(lines[i]);
     }
 
-    for (int i = 0; i < lines; i++) {
-        for (int j = 0; j < 5; j++) {
-            printf("j = %d , %s\n",j, array_of_words[i][j]);
-        }
-        printf("\n");
+    for (int i = 0; i < line_number; i++) {
+      for (int j = 0; j < 5; j++) {
+        printf("j = %d , %s\n", j, array_of_words[i][j]);
+      }
+      printf("\n");
     }
 
     return 0;
