@@ -46,22 +46,12 @@ int main(int argc, char **argv) {
     assert (argc == 3);
     FILE *file = fopen(argv[1], "r");
     check_pointer(file, "File not found");
+
     int line_number = count_lines(file);
     char **lines = parse_to_array(file, line_number);
     fclose(file);
 
-    char **array_of_words[line_number];
-
-    for (int i = 0; i < line_number; i++) {
-      array_of_words[i] = instr_to_tokens(lines[i]);
-    }
-
-    for (int i = 0; i < line_number; i++) {
-      for (int j = 0; j < 5; j++) {
-        printf("j = %d , %s\n", j, array_of_words[i][j]);
-      }
-      printf("\n");
-    }
+    encode_file_lines(lines, line_number);
 
     return 0;
 }

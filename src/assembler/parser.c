@@ -21,20 +21,53 @@ void generate_binary_code(const char **lines, int num_lines, /* SymbolTable tabl
     }
 }
 
-Instruction *decode_instruction(const char *instr[]){
+static bool same_str(const char* str1, const char *str2){
+    return strcmp(str1, str2) == 0;
+}
+
+Instruction *decode_instruction(const char *instr[], long *instr_number,
+                                HashTable *symbol_table, HashTable *waiting_branches){
 /*    if (instr[2] == "\0") {
         return decode_branch_instr_to_bin(instr);
-    } else if (instr[0] == "mul" || instr[0] == "mla"){
-        return encode_multiply(instr); 
-    } else if (instr[0] == "ldr" || instr[0] == "str"){
-        return encode_sdt_instr_to_binary(instr);
-    } else if (instr[0] == "lsl" || instr[0] == "andeq"){
-        return encode_special(instr) ;//special//
-    } else{
-        return enoce_data_proc(instr);
+*/
+    if (same_str(instr[0], "mul") || same_str(instr[0], "mla")){
+        *instr_number += 4;
+        // Multiply instr
     }
-    */
+    else if (same_str(instr[0], "ldr") || same_str(instr[0], "str")){
+        // Single data transfer instr
+        *instr_number += 4;
+    }
+    else if (same_str(instr[0], "lsl") || same_str(instr[0], "andeq")){
+        // Special
+        *instr_number += 4;
+
+    }
+    else if (instr[0][0] == 'b' || instr[1] == NULL){
+        // Branch instr
+        
+    }
+    else {
+        // Data processing instr
+        *instr_number += 4;
+    }
     return 0;
      
 }
 
+void encode_file_lines(char **lines, size_t nlines){
+    char **array_of_words[nlines];
+
+    // where the instruction sits in memory
+    long current_line = 0;
+    for (int i = 0; i < nlines; i++) {
+      array_of_words[i] = instr_to_tokens(lines[i]);
+    }
+
+    for (int i = 0; i < nlines; i++) {
+      for (int j = 0; j < 5; j++) {
+        printf("j = %d , %s\n", j, array_of_words[i][j]);
+      }
+      printf("\n");
+    }
+}
