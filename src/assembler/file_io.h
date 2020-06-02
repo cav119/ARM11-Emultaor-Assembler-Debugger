@@ -3,11 +3,15 @@
 #include <stdint.h>
 #include <stdio.h>
 
-// Parses the assembly input file line by line and returns an array of strings
-char **parse_lines(FILE *input_file);
+#define MAX_LINE_LENGTH (512)
 
-// Writes binary code to an (open) file in little endian
-void write_bytes(FILE *output_file, uint32_t bin_code);
+// Counts the number of lines in the given file
+int count_lines(FILE *file);
 
+// transforms a legitimate line to 5 words
+char **line_to_words(char array[]);
 
+// Parses the lines of a file to an array of strings
+char **parse_to_array(FILE *file, int lines);
 #endif
+
