@@ -25,6 +25,7 @@ typedef struct {
     char *name;
     uint32_t *instruction;
     // the line number of the branch instruction 
+    long instr_line;
 } WaitingBranchInstr;
 
 #endif

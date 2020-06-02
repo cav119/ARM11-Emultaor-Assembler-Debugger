@@ -65,7 +65,7 @@ static HashTable *init_rule_hash(){
 
 uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
                 , WaitingBranchInstr **waiting_branches, int *waiting_br_size, bool *label_next_instr,
-                              char *waiting_label){ 
+                              char *waiting_label, long *instr_line){ 
     uint32_t *instr = malloc(UI32);
     HashTable *codes_maps = init_rule_hash();
     if (code[1] == NULL){
@@ -108,6 +108,7 @@ uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
             WaitingBranchInstr *wait_br = malloc(sizeof(WaitingBranchInstr));
             wait_br->name = str_clone(label);
             wait_br->instruction = instr;
+            wait_br->instr_line = *instr_line; 
             waiting_branches[*waiting_br_size] = wait_br;
             *waiting_br_size = *waiting_br_size + 1;
             // add wait_br to the waiting instruction list;

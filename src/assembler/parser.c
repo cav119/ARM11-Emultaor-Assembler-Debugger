@@ -94,8 +94,8 @@ uint32_t *decode_instruction(const char *instr[], long *instr_number,
         
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_label);
         bool succeeded = false;
-        encode_branch_instr(instr, symbol_table, waiting_branches
-                , wait_br_size, label_next_instr, waiting_label);
+        encode_branch_instr(instr, symbol_table, waiting_branches ,
+                            wait_br_size, label_next_instr, waiting_label, instr_number);
         if (instr[1] != NULL){
             // not a label
             *instr_number += 4;
