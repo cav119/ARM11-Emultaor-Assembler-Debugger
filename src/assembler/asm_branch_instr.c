@@ -100,9 +100,15 @@ uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
         //check against list of labels and see whether it's inside
         *instr = int_code << 28;
         *instr = *instr | (10 << 24); // 1010 at bits 27-24
-        if (ht_get(symbol_table, label, hash_str_size(label))){
+        long *target = ht_get(symbol_table, label, hash_str_size(label));
+        if (target != NULL && *target != -1) {
             // calculate offset according to current line number
             // and offset line number and subtract 8
+            int32_t offset = (int32_t) (*target) - *instr_line - 8;
+            offset >>= 2;
+            int32_t offset_mask = 0x00ffffff;
+            offset &= offset_mask;
+            *instr |= offset;
         }
         else {
             WaitingBranchInstr *wait_br = malloc(sizeof(WaitingBranchInstr));

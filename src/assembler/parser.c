@@ -36,7 +36,7 @@ static int str_comp(const void *arg1, const void *arg2){
 
 }
 
-void put_instr_to_label(bool *label_next_instr, long curr_number, HashTable *symbol_table, char *label){
+static void put_instr_to_label(bool *label_next_instr, long curr_number, HashTable *symbol_table, char *label){
     if (! (*label_next_instr) ){
         return;
     }
@@ -53,6 +53,22 @@ static void free_waiting_branch(WaitingBranchInstr *waiting){
     free(waiting);
 }
 
+// between the current execution of an instruction and reaching another one we need
+// to subtract 8 to take into account the pipeline execution
+#define PC_PIPE_LAG (8)
+
+static void add_offset_to_branch(uint32_t *inst, long branch_line, long target_line){
+    int32_t offset = target_line - branch_line - PC_PIPE_LAG;
+    // offset must be shifted right with 2 bits
+    offset >>= 2;
+    
+    // mask with bits 24-31 equal to 0 
+    int32_t offset_mask = 0x00ffffff;
+    offset &= offset_mask;
+    *inst |= offset;
+
+}
+
 static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_size, WaitingBranchInstr **waiting_branches){
     for (int i = 0; i < *wait_br_size; i++){
         WaitingBranchInstr *br_inst = waiting_branches[i];
@@ -61,7 +77,8 @@ static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_siz
         // The label's instruction line has been defined
         if (label_line != NULL && *label_line != -1){
             // found label 
-            *wait_br_size = *wait_br_size - 1;
+            add_offset_to_branch(br_inst->instruction, br_inst->instr_line, *label_line);
+            *wait_br_size -= 1;
             free_waiting_branch(br_inst);
             printf("Found missing label %s which points to instruction 0x%.8x\n", key, *label_line);
         }
