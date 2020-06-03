@@ -17,6 +17,10 @@ void print_error_exit(char error_msg[]);
 // Checks that an address is in bounds (should be called before any memory access) 
 bool check_valid_memory_access(CpuState *cpu_state, uint32_t address);
 
+// Rearranges a four byte word into little endian form given the pointer to the
+// first byte
+uint32_t index_little_endian_bytes(uint8_t *ptr);
+
 // Returns the masked bit pattern from start to end of a number, 
 // shifted to the beggining for readability
 uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos);
