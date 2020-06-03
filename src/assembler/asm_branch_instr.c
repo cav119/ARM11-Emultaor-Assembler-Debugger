@@ -65,7 +65,7 @@ static HashTable *init_rule_hash(){
 
 uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
                 , WaitingBranchInstr **waiting_branches, int *waiting_br_size, bool *label_next_instr,
-                              char *waiting_label){ 
+                              char *waiting_label, long *instr_line){ 
     uint32_t *instr = malloc(UI32);
     HashTable *codes_maps = init_rule_hash();
     if (code[1] == NULL){
@@ -73,10 +73,15 @@ uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
         char *label = str_clone(code[0]);
         
         // the line where the label points
-        long *pointing_line = calloc(1, sizeof(long));
+        long *pointing_line = malloc(sizeof(long));
+        // so that we know the label's instr line is not known yet 
+        *pointing_line = -1;
+
         *label_next_instr = true;
         ht_set(symbol_table, label, pointing_line, hash_str_size(label));
         strcpy(waiting_label, label);
+        ht_free(codes_maps);
+        return NULL;
     }
     else {
         // get the condition
@@ -95,18 +100,26 @@ uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
         //check against list of labels and see whether it's inside
         *instr = int_code << 28;
         *instr = *instr | (10 << 24); // 1010 at bits 27-24
-        if (ht_get(symbol_table, label, hash_str_size(label))){
+        long *target = ht_get(symbol_table, label, hash_str_size(label));
+        if (target != NULL && *target != -1) {
             // calculate offset according to current line number
             // and offset line number and subtract 8
+            int32_t offset = (int32_t) (*target) - *instr_line - 8;
+            offset >>= 2;
+            int32_t offset_mask = 0x00ffffff;
+            offset &= offset_mask;
+            *instr |= offset;
         }
         else {
             WaitingBranchInstr *wait_br = malloc(sizeof(WaitingBranchInstr));
             wait_br->name = str_clone(label);
             wait_br->instruction = instr;
+            wait_br->instr_line = *instr_line; 
             waiting_branches[*waiting_br_size] = wait_br;
             *waiting_br_size = *waiting_br_size + 1;
             // add wait_br to the waiting instruction list;
         }
+        free(label);
     }
     ht_free(codes_maps);
     return 0;
