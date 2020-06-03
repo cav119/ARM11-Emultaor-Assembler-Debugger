@@ -8,7 +8,7 @@ EMULATOR_SOURCE = emulator/utilities.c emulator/cpu_state.c emulator/pipeline_ex
 
 .PHONY: all clean
 
-all: emulate #assemble # uncomment for part 2
+all: emulate #assemble
 
 # assemble: assemble.o
 # 	$(CC) $(CFLAGS) assemble.c $(ASSEMBLER_SOURCE) -o $@
