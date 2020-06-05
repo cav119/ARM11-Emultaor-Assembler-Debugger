@@ -49,8 +49,6 @@ void *list_get(List *list, int index);
 // adds an element to the back of the list
 void list_add(List *list, void *elem); 
 
-// Deletes an element based on index, if it is in range
-void delete_elem(List *list, int index, void (*free_fun)(void *));
 
 // Deletes an element based on a comparator function
 // and returns whether it did indeed find it
