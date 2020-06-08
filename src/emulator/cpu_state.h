@@ -16,6 +16,17 @@ typedef enum {
 	V
 } flag;
 
+// CPSR flag codes (defined in spec)
+typedef enum {
+	EQ = 0, 
+	NE = 1, 
+	GE = 10, 
+	LT = 11,
+	GT = 12,
+	LE = 13,
+	AL = 14
+} flag_code;
+
 
 // Create a new CPU and an initialise the registers/memory to zero
 CpuState *cpu_state_init(void);
