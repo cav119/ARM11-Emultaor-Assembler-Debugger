@@ -170,10 +170,12 @@ static void destroy_node(ListNode *node, free_f freer){
     }
     freer(node->elem);
     destroy_node(node->next, freer);
+    free(node);
 }
 
 void list_destroy(List *list, free_f freer){
-   destroy_node(list->head, freer); 
+   destroy_node(list->head, freer);
+   free(list);
 }
 
 
