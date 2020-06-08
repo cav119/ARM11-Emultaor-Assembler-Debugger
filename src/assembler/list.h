@@ -44,11 +44,14 @@ void list_del_head(List *list, void (*free_fun)(void *));
 void list_del_last(List *list, void (*free_fun)(void *));
 
 // Gets the element at index if it's within bounds, else NULL
-void *list_get(List *list, int index);
+static void *list_get_index(List *list, int index);
 
 // adds an element to the back of the list
-void list_add(List *list, void *elem); 
+void list_append(List *list, void *elem);
 
+// Gets an element based on comp function, not sure if it actually serves
+// a purpose since you already have an identical key
+void *list_get(List *list, void *key, int (*comp)(const void *, const  void *));
 
 // Deletes an element based on a comparator function
 // and returns whether it did indeed find it

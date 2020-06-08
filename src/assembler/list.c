@@ -21,6 +21,7 @@ void list_del_head(List *list, void (*free_fun)(void *)){
     if (!list->head){
         return;
     }
+    list->size -= 1;
     ListNode *snd = list->head->next;
     free_fun(list->head->elem);
     free(list->head);
@@ -33,9 +34,20 @@ void list_del_head(List *list, void (*free_fun)(void *)){
     }
 }
 
+void *list_get(List *list, void *key, int (*comp)(const void *, const  void *)){
+    ListNode *curr;
+    for (curr = list->head; curr; curr = curr->next){
+        if (comp(curr->elem, key) == 0){
+            return curr->elem;
+        }
+    }
+    return NULL;
+}
+
 void list_del_last(List *list, void (*free_fun)(void *)){
     if (!list->tail){
         if (list->head){
+            list->size -= 1;
             ListNode *head = list->head;
             free_fun(head->elem);
             free(head);
@@ -46,6 +58,7 @@ void list_del_last(List *list, void (*free_fun)(void *)){
             return;
         }
     }
+    list->size -= 1;
     ListNode *last = list->tail;
     ListNode *new_last= last->prev;
     free_fun(last->elem);
@@ -63,7 +76,7 @@ bool index_ok(List *list, int index){
     return index >= 0 && index < list->size;
 }
 
-void *list_get(List *list, int index){
+static void *list_get_index(List *list, int index){
     if (!index_ok(list, index)){
       return NULL;  
     }
@@ -78,7 +91,7 @@ static ListNode* node_alloc(void){
     return calloc(1, sizeof(ListNode));
 }
 
-void list_add(List *list, void *elem){
+void list_append(List *list, void *elem){
    ListNode* node = node_alloc();
    node->elem = elem;
    // Empty list
@@ -109,6 +122,7 @@ bool delete_by_key(List *list, void *key, int (*comp)(const void *, const  void 
     ListNode *curr;
     for (curr = list->head; curr; curr = curr->next){
         if (comp(curr->elem, key) == 0){
+            list->size -= 1;
             ListNode *prev = curr->prev;
             ListNode *next = curr->next;
             free_fun(curr->elem);
@@ -117,6 +131,10 @@ bool delete_by_key(List *list, void *key, int (*comp)(const void *, const  void 
                 // was the head
                 list->head = next;
                 list->head->prev = NULL;
+                if (next == list->tail){
+                    list->tail = NULL;
+                    list->head->next = NULL;
+                }
             }
             else if (!next){
                 // was the tail
