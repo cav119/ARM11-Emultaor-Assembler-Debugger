@@ -171,7 +171,7 @@ void encode_file_lines(FILE* fp){
     // gets to parsing
     char buffer[LINE_SIZE];
     while (fgets(buffer, LINE_SIZE, fp)){
-        char *words = instr_to_tokens(buffer);
+        char **words = instr_to_tokens(buffer);
         decode_instruction(words , &current_line, symbol_table,
                 waiting_branches, waiting_br_size, next_instr_to_label, waiting_label, instructions);
     }
