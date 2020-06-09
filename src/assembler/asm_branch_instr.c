@@ -63,10 +63,13 @@ static HashTable *init_rule_hash(){
 }
 
 
-uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
+AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
                 , WaitingBranchInstr **waiting_branches, int *waiting_br_size, bool *label_next_instr,
                               char *waiting_label, long *instr_line){ 
+    AsmInstruction *asm_instr = calloc(1, sizeof(AsmInstruction));
     uint32_t *instr = malloc(UI32);
+    asm_instr->code = instr;
+    asm_instr->instr_line = *instr_line; 
     HashTable *codes_maps = init_rule_hash();
     if (code[1] == NULL){
         // must be a label, not a jump
@@ -122,7 +125,7 @@ uint32_t *encode_branch_instr(char **code, HashTable *symbol_table
         free(label);
     }
     ht_free(codes_maps);
-    return 0;
+    return asm_instr;
 }
 
 

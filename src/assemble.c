@@ -47,11 +47,11 @@ int main(int argc, char **argv) {
     FILE *file = fopen(argv[1], "r");
     check_pointer(file, "File not found");
 
-    int line_number = count_lines(file);
-    char **lines = parse_to_array(file, line_number);
-    fclose(file);
+    //int line_number = count_lines(file);
+    //char **lines = parse_to_array(file, line_number);
 
-    encode_file_lines(lines, line_number);
+    encode_file_lines(file);
+    fclose(file);
 
     return 0;
 }
