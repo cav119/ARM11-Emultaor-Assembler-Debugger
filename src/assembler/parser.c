@@ -7,13 +7,14 @@
 
 #define MAX_WAITING_BRANCHES (50)
 #define LINE_SIZE (512)
+#define MAX_TOKENS (5)
 
 char **instr_to_tokens(char array[]){
-    char **words = calloc(5, LINE_SIZE);
+    char **words = calloc(MAX_TOKENS, LINE_SIZE * sizeof(char));
     char *arr = strtok(array, " ,:\n");
     int i = 0;
     while (arr != NULL){
-        words[i] = arr;
+        words[i] = strdup(arr);
         arr = strtok(NULL, " ,:\n");
         i ++;
     }
@@ -158,6 +159,15 @@ static int cmp_waiting_branches(const void *arg1, const void *arg2){
     return strcmp(l1->name, l2->name) == 0;
 }
 
+static void free_tokens(char **tokens){
+    for (int i = 0; i < MAX_TOKENS; i++){
+        // frees every word since all of them get allocated
+        printf("Just freed : %s\n", tokens[i]);
+        free(tokens[i]);
+    }
+    free(tokens);
+}
+
 // Function that gets called from main
 void encode_file_lines(FILE* fp){
 
@@ -181,6 +191,8 @@ void encode_file_lines(FILE* fp){
         char **words = instr_to_tokens(buffer);
         decode_instruction(words , &current_line, symbol_table,
                 waiting_branches, next_instr_to_label, waiting_labels, instructions);
+        // frees the tokens after the operations are done 
+        free_tokens(words);
     }
 
     // Setting any remaining labels that haven't been properly set
@@ -194,8 +206,6 @@ void encode_file_lines(FILE* fp){
        printf("\n");
        }*/
     // TODO: FREE ALL HASHTABLES
-    // TODO: FREE WAITING_BRANCHES
-    // TODO: FREE INSTRUCTIONS AFTER WRITING TO FILE
 }
 
 
