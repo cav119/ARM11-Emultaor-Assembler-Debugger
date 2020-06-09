@@ -3,19 +3,19 @@
 #include "utilities.h"
 #include "pipeline_executor.h"
 
-#define CONDITION_BITS process_mask(instr->code, 28, 31)
-#define OFFSET_BITS process_mask(instr->code, 0, 23)
+#define CONDITION_BITS(bits) process_mask(bits, 28, 31)
+#define OFFSET_BITS(bits) process_mask(bits, 0, 23)
 
 
 bool execute_branch_instr(Instruction* instr, CpuState *cpu_state, Pipe* pipe) {
-    if (!check_CPSR_cond(CONDITION_BITS, cpu_state)) {
+    if (!check_CPSR_cond(CONDITION_BITS(instr->code), cpu_state)) {
         free(instr);
         pipe->executing = 0x0;
         return false;
     }
 
     // processing offset
-    int32_t offset = (int32_t) OFFSET_BITS << 2;
+    int32_t offset = (int32_t) OFFSET_BITS(instr->code) << 2;
 
     if (bit_mask(offset, 25)) {
         // must be a negative number, sign extending number

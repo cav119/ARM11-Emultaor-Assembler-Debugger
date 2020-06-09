@@ -1,10 +1,10 @@
 #include "barrel_shifter.h"
 
-#define SHIFTED_REG_M_BITS process_mask(instr->code, 0, 3)
-#define SHIFT_TYPE_BITS process_mask(instr->code, 5, 6)
-#define SHIFT_MODE_BIT bit_mask(instr->code, 4)
-#define SHIFT_REGISTER_BITS process_mask(instr->code, 8, 11)
-#define SHIFT_CONSTANT_BITS process_mask(instr->code, 7, 11)
+#define SHIFTED_REG_M_BITS(bits) process_mask(bits, 0, 3)
+#define SHIFT_TYPE_BITS(bits) process_mask(bits, 5, 6)
+#define SHIFT_MODE_BIT(bits) bit_mask(bits, 4)
+#define SHIFT_REGISTER_BITS(bits) process_mask(bits, 8, 11)
+#define SHIFT_CONSTANT_BITS(bits) process_mask(bits, 7, 11)
 
 
 uint32_t execute_shift(uint32_t operand, uint32_t shift_amount, uint8_t shift_opcode, 
@@ -12,22 +12,22 @@ uint32_t execute_shift(uint32_t operand, uint32_t shift_amount, uint8_t shift_op
     uint32_t result;
 
     switch (shift_opcode) {
-        case lsl:
+        case LSL:
             result = operand << shift_amount;
             //CPSR c bit set to bit 32 after lsl (carry out)
             *c_bit = ((((uint64_t) operand) << shift_amount) >> 32) & 1;
             break;
-        case lsr:
+        case LSR:
             result = operand >> shift_amount;
             //bit (shift_amount - 1) is the carry out
             *c_bit = (operand >> (shift_amount - 1)) & 1;
             break;
-        case asr: 
+        case ASR: 
             result = arithmetic_shift_right(operand, shift_amount);
             //bit (shift_amount - 1) is the carry out
             *c_bit = (operand >> (shift_amount - 1)) & 1;
             break;
-        case ror:
+        case ROR:
             result = rotate_right(operand, shift_amount);
             //bit (shift_amount - 1) is the carry out
             *c_bit = (operand >> (shift_amount - 1)) & 1;
@@ -45,14 +45,15 @@ uint32_t reg_offset_shift(CpuState *cpu_state, Instruction *instr, uint8_t *c_bi
     uint32_t result;
 
     //get the contents of register specified by bits 0-3
-    uint32_t reg_contents = cpu_state->registers[SHIFTED_REG_M_BITS]; 
+    uint32_t reg_contents = cpu_state->registers[SHIFTED_REG_M_BITS(instr->code)]; 
 
     //If bit 4 is 1:
-    if (SHIFT_MODE_BIT) {
-        uint8_t lower_byte = cpu_state->registers[SHIFT_REGISTER_BITS]; 
-        result = execute_shift(reg_contents, lower_byte, SHIFT_TYPE_BITS, c_bit);
+    if (SHIFT_MODE_BIT(instr->code)) {
+        uint8_t lower_byte = cpu_state->registers[SHIFT_REGISTER_BITS(instr->code)]; 
+        result = execute_shift(reg_contents, lower_byte, SHIFT_TYPE_BITS(instr->code), c_bit);
     } else {
-        result = execute_shift(reg_contents, SHIFT_CONSTANT_BITS, SHIFT_TYPE_BITS, c_bit);              
+        result = execute_shift(reg_contents, SHIFT_CONSTANT_BITS(instr->code), 
+            SHIFT_TYPE_BITS(instr->code), c_bit);              
     }
 
     return result;

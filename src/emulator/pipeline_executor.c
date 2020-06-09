@@ -17,19 +17,12 @@ Pipe *init_pipeline(CpuState *cpu_state) {
 
 
 uint32_t fetch(uint32_t ptr, CpuState *cpu_state) {
-    uint32_t code = 0;
     bool valid = check_valid_memory_access(cpu_state, ptr);
     if (!valid) {
         return 0;
     }
 
-    // Get bytes in little endian order
-    uint8_t b1 = cpu_state->memory[ptr];
-    uint8_t b2 = cpu_state->memory[ptr + 1];
-    uint8_t b3 = cpu_state->memory[ptr + 2];
-    uint8_t b4 = cpu_state->memory[ptr + 3];
-    code = b1 | (b2 << 8) | (b3 << 16) | (b4 << 24);
-    return code;
+    return index_little_endian_bytes(&(cpu_state->memory[ptr]));
 }
 
 
@@ -57,16 +50,16 @@ bool is_single_data_transfer_instr(uint32_t bits) {
 Instruction *decode_instruction(uint32_t bits) {
     Instruction *instr = malloc(sizeof(Instruction));
     if (is_branch_instr(bits)){
-        instr->type = branch;
+        instr->type = BRANCH;
     }
     else if (is_multiply_instr(bits)){
-        instr->type = multiply;
+        instr->type = MULTIPLY;
     }
     else if (is_single_data_transfer_instr(bits)){
-        instr->type = single_data_transfer;
+        instr->type = SINGLE_DATA_TRANSFER;
     }
     else {
-        instr->type = data_process;
+        instr->type = DATA_PROCESS;
     }
     instr->code = bits;
     return instr;
@@ -79,22 +72,22 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
         return false;
     }
     switch (instruction->type) {
-        case data_process:
+        case DATA_PROCESS:
             execute_data_processing_instr(cpu_state, instruction);
             free(instruction);
             pipe->executing = 0x0;
             break;
-        case multiply:
+        case MULTIPLY:
             execute_multiply_instruction(instruction, cpu_state);
             pipe->executing = 0x0;
             free(instruction);
             break;
-        case single_data_transfer:
+        case SINGLE_DATA_TRANSFER:
             execute_single_data_transfer_instr(cpu_state, instruction);
             free(instruction);
             pipe->executing = 0x0;
             break;
-        case branch:
+        case BRANCH:
             // no need to free instruction because branch handles it
             return execute_branch_instr(instruction, cpu_state, pipe);
     }
@@ -102,28 +95,37 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
     return true;
 }
 
+// Internal helper recursive function for the pipeline execution, makes the code
+// cleaner and as efficient using gcc's tail call optimisation
+static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe) {
+    if (pipe->fetching) {
+        pipe->executing = pipe->decoding;
+        pipe->decoding = decode_instruction(pipe->fetching);
 
-void start_pipeline(CpuState *cpu_state) {
-    Pipe *pipe = init_pipeline(cpu_state);
-    do {
-        while (pipe->fetching) {
-            pipe->executing = pipe->decoding;
-            pipe->decoding = decode_instruction(pipe->fetching);
-
-            bool branch_instr_succeeded = false;
-            if (pipe->executing) {
-                instruction_type type = pipe->executing->type;
-                bool succeeded = execute(pipe->executing,cpu_state, pipe);
-                if (succeeded && type == branch) {
-                    branch_instr_succeeded = true;
-                }
-            }
-            if (!branch_instr_succeeded) {
-                pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
-                increment_pc(cpu_state);
+        bool branch_instr_succeeded = false;
+        if (pipe->executing) {
+            instruction_type type = pipe->executing->type;
+            bool succeeded = execute(pipe->executing,cpu_state, pipe);
+            if (succeeded && type == BRANCH) {
+                branch_instr_succeeded = true;
             }
         }
-    } while (!end_pipeline(pipe, cpu_state));
+        if (!branch_instr_succeeded) {
+            pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
+            increment_pc(cpu_state);
+        }
+        start_pipeline_helper(cpu_state, pipe);
+    } else {
+        bool ended = end_pipeline(pipe, cpu_state);
+        if (!ended) {
+            start_pipeline_helper(cpu_state, pipe);
+        }
+    }
+}
+
+
+void start_pipeline(CpuState *cpu_state) {
+    start_pipeline_helper(cpu_state, init_pipeline(cpu_state));
 }
 
 
@@ -135,7 +137,7 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state) {
         // fetched a HALT, must execute executing and then decoding
         instruction_type type = pipe->executing->type;
         bool succeeded = execute(pipe->executing, cpu_state, pipe);
-        if (type == branch && succeeded) {
+        if (type == BRANCH && succeeded) {
             return false;
         }
         increment_pc(cpu_state);
@@ -147,7 +149,7 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state) {
         if (pipe->decoding != NULL) {
             instruction_type type = pipe->decoding->type;
             bool succeeded = execute(pipe->decoding, cpu_state, pipe);
-            if (type == branch && succeeded) {
+            if (type == BRANCH && succeeded) {
                 return false;
             }
             pipe->decoding = NULL;

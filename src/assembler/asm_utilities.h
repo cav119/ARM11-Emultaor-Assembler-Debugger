@@ -1,6 +1,7 @@
 #ifndef ASM_UTILITIES_H
 #define ASM_UTILITIES_H
 #include <stdint.h>
+#include <stdlib.h>
 
 // String utility functions (used throughout the program)
 
@@ -18,5 +19,15 @@ uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos);
 
 // Prints a 32 bit number as a binary string
 void print_bits(uint32_t num);
+
+// Checks pointer, exits if it is NULL
+void check_pointer(void *ptr, char *error_msg);
+
+// Returns the size of a string
+size_t hash_str_size(char *str);
+
+//duplicate of the string allocated on heap
+char *str_clone(const char* src);
+
 
 #endif

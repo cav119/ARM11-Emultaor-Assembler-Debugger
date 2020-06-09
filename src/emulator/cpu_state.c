@@ -2,50 +2,42 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "utilities.h"
 #include "pipeline_executor.h"
-
-#define PC 15
 
 
 CpuState *cpu_state_init(void) {
     CpuState *cpu_state = (CpuState *) malloc(sizeof(CpuState));
     check_ptr_not_null(cpu_state, "Could not allocate cpu state memory");
 
-    // allocate and init registers to 0
-    uint8_t *allocated_regs = calloc(NUM_REGISTERS, sizeof(uint32_t));
-    check_ptr_not_null(allocated_regs, "Could not allocate and initialise registers");
-    cpu_state->registers = (uint32_t *) allocated_regs;
-
-    // allocate and init memory to 0
-    uint8_t *allocated_memory = calloc(MEMORY_SIZE, sizeof(uint8_t));
-    check_ptr_not_null(allocated_memory, "Could not allocate and initialise RAM memory");
-    cpu_state->memory = (uint8_t *) allocated_memory;
+    // Allocate and init registers/memory region to 0 in one go
+    cpu_state->registers = calloc(NUM_REGISTERS * sizeof(uint32_t) + MEMORY_SIZE, sizeof(uint8_t));
+    cpu_state->memory = (uint8_t *) &cpu_state->registers[NUM_REGISTERS];
 
     return cpu_state;
 }
 
 
 void cpu_state_free(CpuState *cpu_state) {
-    free(cpu_state->memory);
-    free(cpu_state->registers);
+    free(cpu_state->registers); // this will free memory as well
     free(cpu_state);
 }
 
 
-void set_flag(CpuState *cpuState, flag flag, bool set) {
+void set_flag(CpuState *cpu_state, flag flag, bool set) {
     if (flag > 3){
         print_error_exit("Invalid flag.");
     }
     int mask = (1 << (MAX_INDEX - flag));
-    cpuState->registers[CPSR] = set ?
-            cpuState->registers[CPSR] | mask : cpuState->registers[CPSR] & ~(mask);
+    cpu_state->registers[CPSR] = set ?
+            cpu_state->registers[CPSR] | mask : cpu_state->registers[CPSR] & ~(mask);
 }
 
 
-bool get_flag(CpuState *cpuState, flag flag) {
+bool get_flag(CpuState *cpu_state, flag flag) {
     int mask = (1 << (MAX_INDEX - flag));
-    return cpuState->registers[CPSR] & mask;
+    return cpu_state->registers[CPSR] & mask;
 }
 
 
@@ -125,6 +117,6 @@ uint32_t *offset_pc(int32_t offset, CpuState *cpu_state) {
 
 uint32_t *increment_pc(CpuState *cpu_state) {
     uint32_t *pc = get_pc(cpu_state); 
-    *pc = *pc + 4;
+    *pc += 4;
     return pc;
 }

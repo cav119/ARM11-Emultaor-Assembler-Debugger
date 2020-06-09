@@ -1,17 +1,17 @@
 #include "data_proc_instr.h"
 
-#define IMMEDIATE_ENABLE_BIT bit_mask(instr->code, 25)
-#define CPSR_ENABLE_BIT bit_mask(instr->code, 20)
-#define OPCODE_BITS process_mask(instr->code, 21, 24)
-#define DEST_REG_BITS process_mask(instr->code, 12, 15)
-#define OPERAND1_REG_BITS process_mask(instr->code, 16, 19)
-#define OPERAND2_BITS process_mask(instr->code, 0, 11)
+#define IMMEDIATE_ENABLE_BIT(bits) bit_mask(bits, 25)
+#define CPSR_ENABLE_BIT(bits) bit_mask(bits, 20)
+#define OPCODE_BITS(bits) process_mask(bits, 21, 24)
+#define DEST_REG_BITS(bits) process_mask(bits, 12, 15)
+#define OPERAND1_REG_BITS(bits) process_mask(bits, 16, 19)
+#define OPERAND2_BITS(bits) process_mask(bits, 0, 11)
 
 void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
-    assert(instr->type == data_process);
+    assert(instr->type == DATA_PROCESS);
 
-    uint32_t operand_1 = cpu_state->registers[OPERAND1_REG_BITS];
-    uint32_t operand_2 = OPERAND2_BITS;
+    uint32_t operand_1 = cpu_state->registers[OPERAND1_REG_BITS(instr->code)];
+    uint32_t operand_2 = OPERAND2_BITS(instr->code);
 
     //result will be the computed result that is written into the dest_register
     uint32_t result = 0;
@@ -21,7 +21,7 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
     uint8_t c_bit = 0;
 
     //Compute Operand2
-    if (IMMEDIATE_ENABLE_BIT) {
+    if (IMMEDIATE_ENABLE_BIT(instr->code)) {
         operand_2 = process_mask(instr->code, 0, 7);
         operand_2 = rotate_right(operand_2, process_mask(instr->code, 8, 11) * 2);
         c_bit = (operand_2 >> (process_mask(instr->code, 8, 11) * 2)) & 1;
@@ -30,47 +30,47 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
     }
 
     //Execute
-    switch (OPCODE_BITS) {
-        case and:
+    switch (OPCODE_BITS(instr->code)) {
+        case AND:
             result = operand_1 & operand_2;	
             break;
-        case eor:
+        case EOR:
             result = operand_1 ^ operand_2;
             break;
-        case sub:
+        case SUB:
             result = operand_1 - operand_2;
             //set c_bit if operand_2 > operand_1 which means overflow
             c_bit = operand_2 > operand_1 ? 0 : 1;
             break;
-        case rsb:
+        case RSB:
             result = operand_2 - operand_1;
             //set c_bit if overflow
             c_bit = operand_1 > operand_2 ? 0 : 1;
             break;
-        case add:
+        case ADD:
             result = operand_1 + operand_2;
             //If operand_1 + operand_2 overflows, set c_bit = 1
             uint64_t overflow_check = ((uint64_t) operand_1) + ((uint64_t) operand_2);
             c_bit = overflow_check >= (((uint64_t) 1) << 32) ? 1 : 0;
             break;
-        case tst:
+        case TST:
             result = operand_1 & operand_2;
             write_result = 0;
             break;
-        case teq:
+        case TEQ:
             result = operand_1 ^ operand_2;
             write_result = 0;
             break;
-        case cmp:
+        case CMP:
             result = operand_1 - operand_2;
             write_result = 0;
             //If operand_2 > operand_1, then overflow from the subtraction
             c_bit = operand_2 > operand_1 ? 0 : 1;
             break;
-        case orr:
+        case ORR:
             result = operand_1 | operand_2;
             break;
-        case mov:
+        case MOV:
             result = operand_2;
             break;
         default:
@@ -81,11 +81,11 @@ void execute_data_processing_instr(CpuState *cpu_state, Instruction *instr) {
 
     //Write to dest_register
     if (write_result) {
-        cpu_state->registers[DEST_REG_BITS] = result;
+        cpu_state->registers[DEST_REG_BITS(instr->code)] = result;
     }
 
     //CPSR FLAGS
-    if (CPSR_ENABLE_BIT) {
+    if (CPSR_ENABLE_BIT(instr->code)) {
     
         //C bit (bit 29 CPSR) - set to c_bit which is determined by the opcode:
         set_CPSR_flag(cpu_state, C, c_bit);

@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "asm_utilities.h"
+#include <stdio.h>
 
 // char **get_instr_tokens(char instr[]) {
 //     char **words = calloc(5, 512);
@@ -14,10 +15,6 @@
 //     return words;
 // }
 
-// int main() {
-//     char x[] = "hello there!";
-//     printf("%s\n", substring(x, 1, 3));
-//     return 0;
 // }
 
 
@@ -26,6 +23,10 @@ uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos) {
     return (n >> start_pos) & mask;
 }
 
+int32_t setBit(uint32_t n, int pos){
+    n |= (1 << pos);
+    return n;
+}
 
 void print_bits(uint32_t x) {
     int i;
@@ -42,3 +43,32 @@ void print_bits(uint32_t x) {
     }
     printf("\n");
 }
+
+void check_pointer(void *ptr, char *error_msg){
+    if (ptr == NULL){
+       puts(error_msg); 
+       exit(EXIT_FAILURE);
+    }
+}
+
+size_t hash_str_size(char *str){
+    if (str == NULL){
+        return 0;
+    }
+    return sizeof(char) * (strlen(str));
+}
+
+
+char *str_clone(const char *src){
+    if (src == NULL){
+        perror("You tried to clone NULL string");
+    }
+    int len = strlen(src);
+    char *clone = malloc(sizeof(char) * (len + 1));
+    for (int i = 0; i < len; i++){
+        clone[i] = src[i];
+    }
+    clone[len] = '\0';
+    return clone;
+}
+

@@ -3,10 +3,10 @@
 
 // instruction_type enum
 typedef enum {
-	data_process,
-	multiply,
-	single_data_transfer,
-	branch
+	DATA_PROCESS,
+	MULTIPLY,
+	SINGLE_DATA_TRANSFER,
+	BRANCH
 } instruction_type;
 
 // Instruction struct

@@ -12,16 +12,16 @@
 
 // Opcode enum
 typedef enum {
-	and = 0,
-	eor = 1,
-	sub = 2,
-	rsb = 3,
-	add = 4,
-	tst = 8,
-	teq = 9,
-	cmp = 10,
-	orr = 12,
-	mov = 13
+	AND = 0,
+	EOR = 1,
+	SUB = 2,
+	RSB = 3,
+	ADD = 4,
+	TST = 8,
+	TEQ = 9,
+	CMP = 10,
+	ORR = 12,
+	MOV = 13
 } opcode_type;
 
 

@@ -18,6 +18,11 @@ bool check_valid_memory_access(CpuState *cpu_state, uint32_t address) {
 }
 
 
+uint32_t index_little_endian_bytes(uint8_t *ptr) {
+    return *ptr | (*(ptr + 1) << 8) | (*(ptr + 2) << 16) | (*(ptr + 3) << 24);;
+}
+
+
 uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos) {
     uint32_t mask = (1 << (end_pos + 1 - start_pos)) - 1;
     return (n >> start_pos) & mask;
@@ -45,19 +50,19 @@ void set_CPSR_flag(CpuState* cpu_state, flag flag, bool set) {
 
 bool check_CPSR_cond(uint8_t cond, CpuState* cpu_state) {
     switch (cond) {
-        case 0:
+        case EQ: /* EQUAL */
             return get_flag(cpu_state, Z);
-        case 1:
+        case NE: /* NOT EQUAL */
             return !get_flag(cpu_state, Z);
-        case 10:
+        case GE: /* GREATER THAN OR EQUAL */
             return get_flag(cpu_state, N) == get_flag(cpu_state, V);
-        case 11:
-            return get_flag(cpu_state, N ) != get_flag(cpu_state, V);
-        case 12:
+        case LT: /* LESS THAN */
+            return get_flag(cpu_state, N) != get_flag(cpu_state, V);
+        case GT: /* GREATER THAN */
             return !get_flag(cpu_state, Z) && (get_flag(cpu_state, N) == get_flag(cpu_state, V));
-        case 13:
-            return get_flag(cpu_state, Z) || (get_flag(cpu_state, N ) != get_flag(cpu_state, V));
-        case 14:
+        case LE: /* LESS THAN OR EQUAL */
+            return get_flag(cpu_state, Z) || (get_flag(cpu_state, N) != get_flag(cpu_state, V));
+        case AL: /* ALWAYS */
             return true;
         default:
             print_error_exit("Undefined CPSR condition");
