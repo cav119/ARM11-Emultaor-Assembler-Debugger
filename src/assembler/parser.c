@@ -2,6 +2,7 @@
 #include "asm_branch_instr.h"
 #include "asm_multiply_instr.h"
 #include "asm_branch_instr.h"
+#include "array_list.h"
 
 
 #define MAX_WAITING_BRANCHES (50)
@@ -70,17 +71,20 @@ static void add_offset_to_branch(uint32_t *inst, long branch_line, long target_l
 
 }
 
-static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_size, WaitingBranchInstr **waiting_branches){
-    for (int i = 0; i < *wait_br_size; i++){
-        WaitingBranchInstr *br_inst = waiting_branches[i];
+static void add_labels_to_waiting_inst(HashTable *symbol_table, ArrayList *waiting_branches){
+    for (int i = 0; i < waiting_branches->size; i++){
+        WaitingBranchInstr *br_inst = arrlist_get(waiting_branches, i);
+        if (br_inst->solved){
+            // label has been solved, no need to check it anymore
+            continue;
+        }
         char *key = br_inst->name;
         long *label_line = ht_get(symbol_table, key, hash_str_size(key)); 
         // The label's instruction line has been defined
         if (label_line != NULL && *label_line != -1){
             // found label 
             add_offset_to_branch(br_inst->instruction, br_inst->instr_line, *label_line);
-            *wait_br_size -= 1;
-            free_waiting_branch(br_inst);
+            br_inst->solved = true;
             printf("Found missing label %s which points to instruction 0x%.8x\n", key, *label_line);
         }
     }
@@ -88,8 +92,8 @@ static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_siz
 }
 
 void decode_instruction(const char *instr[], long *instr_number,
-        HashTable *symbol_table, WaitingBranchInstr **waiting_branches,
-        int *wait_br_size, bool *label_next_instr, char *waiting_label,
+        HashTable *symbol_table, ArrayList *waiting_branches,
+         bool *label_next_instr, char *waiting_label,
         List *instructions){
 
     if (same_str(instr[0], "mul") || same_str(instr[0], "mla")){
@@ -114,7 +118,7 @@ void decode_instruction(const char *instr[], long *instr_number,
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_label);
         bool succeeded = false;
         Instruction *branch = encode_branch_instr(instr, symbol_table, waiting_branches ,
-                wait_br_size, label_next_instr, waiting_label, instr_number);
+                label_next_instr, waiting_label, instr_number);
       
         if (instr[1] != NULL){
             // not a label
@@ -123,7 +127,7 @@ void decode_instruction(const char *instr[], long *instr_number,
         }
         else {
             // puts the label in the right place for the instructions with missing labels, if any
-            add_labels_to_waiting_inst(symbol_table, wait_br_size, waiting_branches);
+            add_labels_to_waiting_inst(symbol_table, waiting_branches);
 
         }
         // Branch instr
@@ -149,15 +153,13 @@ static int cmp_waiting_branches(const void *arg1, const void *arg2){
     return strcmp(l1->name, l2->name) == 0;
 }
 
+// Function that gets called from main
 void encode_file_lines(FILE* fp){
 
     //char **array_of_words[nlines];
     //uint32_t *instructions = malloc(nlines * sizeof(uint32_t));
     char *waiting_label = malloc(sizeof(char) * LINE_SIZE);
-    WaitingBranchInstr *waiting_branches = calloc(MAX_WAITING_BRANCHES, sizeof(WaitingBranchInstr));
-    
-    int *waiting_br_size = malloc(sizeof(int));
-    *waiting_br_size = 0;
+    ArrayList *waiting_branches = arrlist_init();
     // where the instruction sits in memory
     HashTable *symbol_table = ht_create(str_comp);
     long current_line = 0;
@@ -173,11 +175,11 @@ void encode_file_lines(FILE* fp){
     while (fgets(buffer, LINE_SIZE, fp)){
         char **words = instr_to_tokens(buffer);
         decode_instruction(words , &current_line, symbol_table,
-                waiting_branches, waiting_br_size, next_instr_to_label, waiting_label, instructions);
+                waiting_branches, next_instr_to_label, waiting_label, instructions);
     }
 
     // Setting any remaining labels that haven't been properly set
-    add_labels_to_waiting_inst(symbol_table, waiting_br_size, waiting_branches);
+    add_labels_to_waiting_inst(symbol_table, waiting_branches);
 
 
     /* for (int i = 0; i < nlines; i++) {
@@ -186,6 +188,9 @@ void encode_file_lines(FILE* fp){
        }
        printf("\n");
        }*/
+    // TODO: FREE ALL HASHTABLES
+    // TODO: FREE WAITING_BRANCHES
+    // TODO: FREE INSTRUCTIONS AFTER WRITING TO FILE
 }
 
 
