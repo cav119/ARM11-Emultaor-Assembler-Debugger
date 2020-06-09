@@ -2,6 +2,7 @@
 #include "asm_branch_instr.h"
 #include "asm_multiply_instr.h"
 #include "asm_branch_instr.h"
+#include "array_list.h"
 
 
 #define MAX_WAITING_BRANCHES (50)
@@ -70,9 +71,9 @@ static void add_offset_to_branch(uint32_t *inst, long branch_line, long target_l
 
 }
 
-static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_size, WaitingBranchInstr **waiting_branches){
-    for (int i = 0; i < *wait_br_size; i++){
-        WaitingBranchInstr *br_inst = waiting_branches[i];
+static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_size, ArrayList *waiting_branches){
+    for (int i = 0; i < waiting_branches->size; i++){
+        WaitingBranchInstr *br_inst = arrlist_get(waiting_branches, i);
         if (br_inst->solved){
             // label has been solved, no need to check it anymore
             continue;
@@ -91,7 +92,7 @@ static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_siz
 }
 
 void decode_instruction(const char *instr[], long *instr_number,
-        HashTable *symbol_table, WaitingBranchInstr **waiting_branches,
+        HashTable *symbol_table, ArrayList *waiting_branches,
         int *wait_br_size, bool *label_next_instr, char *waiting_label,
         List *instructions){
 
@@ -157,7 +158,7 @@ void encode_file_lines(FILE* fp){
     //char **array_of_words[nlines];
     //uint32_t *instructions = malloc(nlines * sizeof(uint32_t));
     char *waiting_label = malloc(sizeof(char) * LINE_SIZE);
-    WaitingBranchInstr *waiting_branches = calloc(MAX_WAITING_BRANCHES, sizeof(WaitingBranchInstr));
+    ArrayList *waiting_branches = arrlist_init();
     
     int *waiting_br_size = malloc(sizeof(int));
     *waiting_br_size = 0;
@@ -189,6 +190,9 @@ void encode_file_lines(FILE* fp){
        }
        printf("\n");
        }*/
+    // TODO: FREE ALL HASHTABLES
+    // TODO: FREE WAITING_BRANCHES
+    // TODO: FREE INSTRUCTIONS AFTER WRITING TO FILE
 }
 
 
