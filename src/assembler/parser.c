@@ -71,7 +71,7 @@ static void add_offset_to_branch(uint32_t *inst, long branch_line, long target_l
 
 }
 
-static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_size, ArrayList *waiting_branches){
+static void add_labels_to_waiting_inst(HashTable *symbol_table, ArrayList *waiting_branches){
     for (int i = 0; i < waiting_branches->size; i++){
         WaitingBranchInstr *br_inst = arrlist_get(waiting_branches, i);
         if (br_inst->solved){
@@ -93,7 +93,7 @@ static void add_labels_to_waiting_inst(HashTable *symbol_table, int *wait_br_siz
 
 void decode_instruction(const char *instr[], long *instr_number,
         HashTable *symbol_table, ArrayList *waiting_branches,
-        int *wait_br_size, bool *label_next_instr, char *waiting_label,
+         bool *label_next_instr, char *waiting_label,
         List *instructions){
 
     if (same_str(instr[0], "mul") || same_str(instr[0], "mla")){
@@ -118,7 +118,7 @@ void decode_instruction(const char *instr[], long *instr_number,
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_label);
         bool succeeded = false;
         Instruction *branch = encode_branch_instr(instr, symbol_table, waiting_branches ,
-                wait_br_size, label_next_instr, waiting_label, instr_number);
+                label_next_instr, waiting_label, instr_number);
       
         if (instr[1] != NULL){
             // not a label
@@ -127,7 +127,7 @@ void decode_instruction(const char *instr[], long *instr_number,
         }
         else {
             // puts the label in the right place for the instructions with missing labels, if any
-            add_labels_to_waiting_inst(symbol_table, wait_br_size, waiting_branches);
+            add_labels_to_waiting_inst(symbol_table, waiting_branches);
 
         }
         // Branch instr
@@ -177,11 +177,11 @@ void encode_file_lines(FILE* fp){
     while (fgets(buffer, LINE_SIZE, fp)){
         char **words = instr_to_tokens(buffer);
         decode_instruction(words , &current_line, symbol_table,
-                waiting_branches, waiting_br_size, next_instr_to_label, waiting_label, instructions);
+                waiting_branches, next_instr_to_label, waiting_label, instructions);
     }
 
     // Setting any remaining labels that haven't been properly set
-    add_labels_to_waiting_inst(symbol_table, waiting_br_size, waiting_branches);
+    add_labels_to_waiting_inst(symbol_table, waiting_branches);
 
 
     /* for (int i = 0; i < nlines; i++) {
