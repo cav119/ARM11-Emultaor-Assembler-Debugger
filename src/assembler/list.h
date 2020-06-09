@@ -1,3 +1,5 @@
+#ifndef DEQUE_H
+#define DEQUE_H
 #include <stdlib.h>
 #include <stdbool.h>
 
@@ -64,3 +66,4 @@ void list_for_each(List *list, void (*fun)(void *));
 // Frees and destroys the list using the given free function, then destroys the List itself
 void list_destroy(List *list, void (*free_fun)(void *)); 
 
+#endif
