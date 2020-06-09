@@ -4,12 +4,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "assembler/list.h"
 #include "assembler/asm_utilities.h"
 #include "assembler/hash_table.h"
 #include "assembler/file_io.h"
 #include "assembler/parser.h"
-
+#include "assembler/array_list.h"
 
 
 int read_red_num(char *reg){
@@ -42,24 +41,18 @@ void test_ht(void){
 
 }
 
-void printl(void *elem){
-    char *str = (char *) elem;
-    printf("%s\n", elem);
-}
-
-void test_list(void){
-    List *list = create_list();
-    list_append(list, strdup("asd"));
-    list_append(list, strdup("macarena"));
-    list_for_each(list, printl);
-    delete_by_key(list, "asd", &strcmp, &free);
-    list_for_each(list, printl);
-    list_destroy(list, &free);
-
+void test_arrl(void){
+   ArrayList *list = arrlist_init();
+    arrlist_append(list, strdup("Asdasd"));
+    arrlist_append(list, strdup("Mike"));
+    for (int i = 0; i < list->size; i++){
+        printf("%s\n", (char *) arrlist_get(list, i));
+    }
+    arrlist_destroy_free(list, &free);
 }
 
 int main(int argc, char **argv) {
-    test_list();
+    test_arrl();
     test_ht();
     assert (argc == 3);
     FILE *file = fopen(argv[1], "r");
