@@ -18,6 +18,12 @@ typedef struct {
 	instruction_type type;	
 } Instruction;
 
+// Assembler full instruction 
+typedef struct {
+    uint32_t *code;
+    uint32_t instr_line;
+} AsmInstruction;
+
 typedef struct {
     char *name;
     uint32_t *instruction;
