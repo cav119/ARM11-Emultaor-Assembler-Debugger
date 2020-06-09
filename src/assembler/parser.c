@@ -199,6 +199,11 @@ void encode_file_lines(FILE* fp){
     add_labels_to_waiting_inst(symbol_table, waiting_branches);
 
 
+    free(next_instr_to_label);
+
+    // this free suffices since the HT only has char *keys, and long *values
+    // so there is no need for a more advanced free function
+    ht_free(symbol_table);
     /* for (int i = 0; i < nlines; i++) {
        for (int j = 0; j < 5; j++) {
        printf("j = %d , %s\n", j, array_of_words[i][j]);
