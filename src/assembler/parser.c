@@ -153,15 +153,13 @@ static int cmp_waiting_branches(const void *arg1, const void *arg2){
     return strcmp(l1->name, l2->name) == 0;
 }
 
+// Function that gets called from main
 void encode_file_lines(FILE* fp){
 
     //char **array_of_words[nlines];
     //uint32_t *instructions = malloc(nlines * sizeof(uint32_t));
     char *waiting_label = malloc(sizeof(char) * LINE_SIZE);
     ArrayList *waiting_branches = arrlist_init();
-    
-    int *waiting_br_size = malloc(sizeof(int));
-    *waiting_br_size = 0;
     // where the instruction sits in memory
     HashTable *symbol_table = ht_create(str_comp);
     long current_line = 0;
