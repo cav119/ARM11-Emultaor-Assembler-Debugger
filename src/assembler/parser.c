@@ -38,14 +38,20 @@ static int str_comp(const void *arg1, const void *arg2){
 
 }
 
-static void put_instr_to_label(bool *label_next_instr, long curr_number, HashTable *symbol_table, char *label){
+static void put_instr_to_label(bool *label_next_instr, long curr_number, HashTable *symbol_table, ArrayList *labels){
     if (! (*label_next_instr) ){
         return;
     }
     *label_next_instr = false;
     long *line = malloc(sizeof(long));
     *line = curr_number;
-    ht_set(symbol_table, label, line, hash_str_size(label));
+    for (int i = 0; i < labels->size; i++){
+        WaitingLabel *label = labels->elements[i];
+        if (!label->solved) {
+            ht_set(symbol_table, label->name, line, hash_str_size(label->name));
+            label->solved = true;
+        }
+    }
 }
 
 
@@ -93,18 +99,18 @@ static void add_labels_to_waiting_inst(HashTable *symbol_table, ArrayList *waiti
 
 void decode_instruction(const char *instr[], long *instr_number,
         HashTable *symbol_table, ArrayList *waiting_branches,
-         bool *label_next_instr, char *waiting_label,
+         bool *label_next_instr, ArrayList *waiting_labels,
         List *instructions){
 
     if (same_str(instr[0], "mul") || same_str(instr[0], "mla")){
         // Multiply instr
-        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_label);
+        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
         *instr_number += 4;
 
     }
     else if (same_str(instr[0], "ldr") || same_str(instr[0], "str")){
         // Single data transfer instr
-        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_label);
+        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
         *instr_number += 4;
     }
     else if (same_str(instr[0], "lsl") || same_str(instr[0], "andeq")){
@@ -115,10 +121,10 @@ void decode_instruction(const char *instr[], long *instr_number,
     // branch instrucntion or label
     else if (instr[0][0] == 'b' || instr[1] == NULL){
 
-        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_label);
+        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
         bool succeeded = false;
-        Instruction *branch = encode_branch_instr(instr, symbol_table, waiting_branches ,
-                label_next_instr, waiting_label, instr_number);
+        AsmInstruction *branch = encode_branch_instr(instr, symbol_table, waiting_branches ,
+                label_next_instr, waiting_labels, instr_number);
       
         if (instr[1] != NULL){
             // not a label
@@ -134,10 +140,9 @@ void decode_instruction(const char *instr[], long *instr_number,
     }
     else {
         // Data processing instr
-        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_label);
+        put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
         *instr_number += 4;
     }
-    return 0;
 
 }
 
@@ -158,7 +163,7 @@ void encode_file_lines(FILE* fp){
 
     //char **array_of_words[nlines];
     //uint32_t *instructions = malloc(nlines * sizeof(uint32_t));
-    char *waiting_label = malloc(sizeof(char) * LINE_SIZE);
+    ArrayList *waiting_labels = arrlist_init();
     ArrayList *waiting_branches = arrlist_init();
     // where the instruction sits in memory
     HashTable *symbol_table = ht_create(str_comp);
@@ -175,7 +180,7 @@ void encode_file_lines(FILE* fp){
     while (fgets(buffer, LINE_SIZE, fp)){
         char **words = instr_to_tokens(buffer);
         decode_instruction(words , &current_line, symbol_table,
-                waiting_branches, next_instr_to_label, waiting_label, instructions);
+                waiting_branches, next_instr_to_label, waiting_labels, instructions);
     }
 
     // Setting any remaining labels that haven't been properly set

@@ -17,7 +17,7 @@ char **instr_to_tokens(char array[]);
 // Encodes an instruction
 void decode_instruction(const char *instr[], long *instr_number,
                                 HashTable *symbol_table, ArrayList *waiting_branches,
-                                bool *label_next_instr, char *waiting_label, List *instructions);
+                                bool *label_next_instr, ArrayList *waiting_label, List *instructions);
 
 void encode_file_lines(FILE*fp);
 

@@ -62,10 +62,17 @@ static HashTable *init_rule_hash(){
     return hash_table;
 }
 
+// creates a new WaitingLabel with given values
+static WaitingLabel *alloc_wait_label(char *name){
+    WaitingLabel *label = calloc(1, sizeof(WaitingLabel));
+    label->name = name; 
+    label->solved = false;
+    return label;
+}
 
 AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
                 , ArrayList *waiting_branches, bool *label_next_instr,
-                              char *waiting_label, long *instr_line){ 
+                              ArrayList *waiting_labels, long *instr_line){ 
     AsmInstruction *asm_instr = calloc(1, sizeof(AsmInstruction));
     uint32_t *instr = malloc(UI32);
     asm_instr->code = instr;
@@ -82,7 +89,8 @@ AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
 
         *label_next_instr = true;
         ht_set(symbol_table, label, pointing_line, hash_str_size(label));
-        strcpy(waiting_label, label);
+        WaitingLabel *waiting = alloc_wait_label(label);
+        arrlist_append(waiting_labels, waiting);
         ht_free(codes_maps);
         return NULL;
     }
