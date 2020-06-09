@@ -9,19 +9,22 @@
 // Internal helper functions 
 static void set_ldr_str_bit(const char *token, uint32_t *bin_code);
 static void set_transfer_reg_bits(const char *token, uint32_t *bin_code);
-static bool set_address_bits(const char *token, uint32_t *bin_code);
+static bool set_address_bits(const char *token, uint32_t *bin_code, uint32_t curr_instr, 
+    List *dumped_bytes_list, List *pending_offset_instr_addrs);
 
 
-uint32_t encode_sdt_instr_to_binary(char *tokens[]) {
+uint32_t encode_sdt_instr_to_binary(char *tokens[], uint32_t curr_instr, List *dumped_bytes_list, 
+    List *pending_offset_instr_addrs) {
+
     char cond = 0xE; // default condition code is set to 1110 in 31-28
     uint32_t bin_code = cond << 28 | 1 << 26; // set 01 in 27-26
 
     set_ldr_str_bit(tokens[0], &bin_code);
     set_transfer_reg_bits(tokens[1], &bin_code);
-    bool not_mov = set_address_bits(tokens[2], &bin_code); // check stuff
+    bool not_mov = set_address_bits(tokens[2], &bin_code, curr_instr, dumped_bytes_list, pending_offset_instr_addrs);
 
     if (!not_mov) {
-        printf("compile to mov instead\n");
+        // call to encode_data_proc_inst instead (treated as a mov instr)
         // return encode_data_proc_instr(tokens);
     }
 
@@ -164,7 +167,9 @@ void set_post_indexed_address_bits(char *token, uint32_t *bin_code) {
 
 // Sets all other bits that rely on the addressing: I, P, U, Rn and Offset
 // If a MOV instruction is to be called, it returns false
-bool set_address_bits(const char *token, uint32_t *bin_code) {
+bool set_address_bits(const char *token, uint32_t *bin_code, uint32_t curr_instr_addr, 
+    List *dumped_bytes_list, List *pending_offset_instr_addrs) {
+
     char tok_copy[strlen(token) + 1];
     strcpy(tok_copy, token);
 
@@ -177,10 +182,44 @@ bool set_address_bits(const char *token, uint32_t *bin_code) {
         }
 
         // deal with general case
-        // add address_const to end of linked list
-        // a = size of finished bin file / 4 
-        // offset = a - (curr_line_index + 8)
-        // equivalent ldr r0, [PC,offset]
+        // add to pending_offset_instr_addrs the address of this instr (curr_instr_addr)
+        // leave the offset uncalculated (these bits are set later)
+
+        // add bytes to the list
+        void *bytes = malloc(sizeof(uint32_t));
+        *((uint32_t *) bytes) = address_const;
+        list_append(dumped_bytes_list, bytes);
+
+        // mark the address of this instruction as pending for the offset calculation
+        void *index = malloc(sizeof(uint32_t));
+        *((uint32_t *) index) = curr_instr_addr;
+        list_append(pending_offset_instr_addrs, index);
+
+        /* Once all the instructions have been encoded and placed in an instruction table
+           ready to be written to the file, do the following (in the parser.c file):
+
+            // uint32_t instruction_array[] holds all the instruction bytes (4 bytes per element) after being encoded in the main parse loop
+
+           // IN THEORY, THERE SHOULD BE THE SAME NUMBER OF ELEMENTS IN BOTH LISTS,
+           // EACH CORRESPONDING TO THE ADDR OF THE INSTR IN WHICH TO CALCULATE THE OFFSET
+           // loop through both lists
+           int last_instr_idx = total number of instructions - 1;
+           ListNode *curr_bytes_node = dumped_bytes_list->head;
+           ListNode *curr_addr_node = pending_offset_instr_addrs->head;
+           int data_index = 1;
+           while (curr_bytes_node != NULL && curr_addr_node != NULL) {
+               uint32_t instr_addr = *((int *)pending_offset_instr_addrs->elem);    // this is the index to the instruction array of a pending instruction
+               instruction_array[instr_addr] |= (last_instr_idx + data_index - instr_addr) // set offset bits as needed
+               instruction_array[last_instr_idx + data_index] = *((uint32_t *)curr_bytes_node->elem); // write the bytes at the end of array
+               data_index++;
+               curr_node = curr_node->next;
+               curr_addr_node = curr_addr_node->next;
+           }
+
+           // write the instruction array to the file
+
+           // free both lists and other data structurs
+        */
 
         return true;
     }
