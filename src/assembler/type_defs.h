@@ -1,6 +1,7 @@
 #ifndef ASM_TYPES_H
 #define ASM_TYPES_H
 #include <stdint.h>
+#include <stdbool.h>
 
 
 // instruction_type enum
@@ -29,6 +30,7 @@ typedef struct {
     uint32_t *instruction;
     // the line number of the branch instruction 
     long instr_line;
+    bool solved;
 } WaitingBranchInstr;
 
 

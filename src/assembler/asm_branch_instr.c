@@ -118,6 +118,7 @@ AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
             wait_br->name = str_clone(label);
             wait_br->instruction = instr;
             wait_br->instr_line = *instr_line; 
+            wait_br->solved = false;
             waiting_branches[*waiting_br_size] = wait_br;
             *waiting_br_size = *waiting_br_size + 1;
             // add wait_br to the waiting instruction list;
