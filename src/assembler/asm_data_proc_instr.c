@@ -18,15 +18,19 @@ uint32_t read_imm_val(const char *expression);
 Size is the number of tokens in instr[] (needed for optional shift
 register scenario) - set size to 3 to skip the shift register option
 Returns corresponding binary instruction in big endian format*/
-uint32_t encode_dp_instr_to_binary(char *instr[], uint8_t size) {
+AsmInstruction *encode_dp_instr_to_binary(char *instr[], uint8_t size, long *instr_line) {
     assert(size >= 3);
-
+    AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
+    uint32_t *code = malloc(sizeof(uint32_t));
+    inst->instr_line = *instr_line;
+    inst->code = code;
     //Check for special instruction "andeq r0, r0, r0" (halt instruction)
     if (strcmp(instr[0], "andeq") == 0
         && strcmp(instr[1], "r0") == 0
         && strcmp(instr[2], "r0") == 0
         && strcmp(instr[3], "r0") == 0) {
-        return 0; 
+        *code = 0;
+        return inst; 
     }
 
     //Special instruction "lsl Rn, <#expression>" - manually changes instr
@@ -72,8 +76,8 @@ uint32_t encode_dp_instr_to_binary(char *instr[], uint8_t size) {
     i |= ((reg_rn & 0x0F) << 16);
     i |= ((reg_rd & 0x0F) << 12);
     i |= (operand_2 & 0x0FFF);
-
-    return i;
+    *code = i;
+    return inst;
 }
 
 /* Takes in the strings which are used for computing operand_2

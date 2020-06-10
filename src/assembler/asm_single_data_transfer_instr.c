@@ -12,8 +12,9 @@ static void set_transfer_reg_bits(const char *token, uint32_t *bin_code);
 static bool set_address_bits(const char *token, uint32_t *bin_code);
 
 
-uint32_t encode_sdt_instr_to_binary(char *tokens[]) {
+AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], long *instr_line) {
     char cond = 0xE; // default condition code is set to 1110 in 31-28
+    AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
     uint32_t bin_code = cond << 28 | 1 << 26; // set 01 in 27-26
 
     set_ldr_str_bit(tokens[0], &bin_code);
@@ -24,8 +25,11 @@ uint32_t encode_sdt_instr_to_binary(char *tokens[]) {
         printf("compile to mov instead\n");
         // return encode_data_proc_instr(tokens);
     }
-
-    return bin_code;
+    uint32_t *actual_code = malloc(sizeof(uint32_t));
+    *actual_code = bin_code;
+    inst->code = actual_code;
+    inst->instr_line = *instr_line;
+    return inst;
 }
 
 
