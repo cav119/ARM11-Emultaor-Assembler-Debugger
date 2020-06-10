@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "asm_single_data_transfer_instr.h"
+#include "asm_data_proc_instr.h"
 
 
 // Internal helper functions 
@@ -27,7 +28,14 @@ AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], uint32_t *curr_instr,
 
     if (!not_mov) {
         // call to encode_data_proc_inst instead (treated as a mov instr)
-        // return encode_data_proc_instr(tokens);
+        int tokens_size = 0;
+        for (tokens_size = 0; tokens_size < 5; tokens_size++){
+            if (tokens[tokens_size] == NULL){
+                break;
+            }
+        }
+        free(inst);
+        return encode_dp_instr_to_binary(tokens, tokens_size, curr_instr);
     }
     uint32_t *actual_code = malloc(sizeof(uint32_t));
     *actual_code = bin_code;
