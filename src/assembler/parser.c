@@ -211,8 +211,9 @@ void encode_file_lines(FILE* fp){
 
 
     free(next_instr_to_label);
-
+    
     arrlist_destroy_free(waiting_labels, free_waiting_label);
+    arrlist_destroy_free(waiting_branches, free_waiting_branch);
     // this free suffices since the HT only has char *keys, and long *values
     // so there is no need for a more advanced free function
     ht_free(symbol_table);
