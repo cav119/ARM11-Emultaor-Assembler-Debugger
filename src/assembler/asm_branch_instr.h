@@ -13,6 +13,6 @@
 // reading the 5 strings from the code
 AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
         , ArrayList *waiting_branches, bool *label_next_instr
-        , char *waiting_label, long *instr_line);
+        , ArrayList *waiting_label, long *instr_line);
 
 #endif

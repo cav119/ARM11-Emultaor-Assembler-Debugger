@@ -62,14 +62,17 @@ static HashTable *init_rule_hash(){
     return hash_table;
 }
 
+// creates a new WaitingLabel with given values
+static WaitingLabel *alloc_wait_label(char *name){
+    WaitingLabel *label = calloc(1, sizeof(WaitingLabel));
+    label->name = name; 
+    label->solved = false;
+    return label;
+}
 
 AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
                 , ArrayList *waiting_branches, bool *label_next_instr,
-                              char *waiting_label, long *instr_line){ 
-    AsmInstruction *asm_instr = calloc(1, sizeof(AsmInstruction));
-    uint32_t *instr = malloc(UI32);
-    asm_instr->code = instr;
-    asm_instr->instr_line = *instr_line; 
+                              ArrayList *waiting_labels, long *instr_line){ 
     HashTable *codes_maps = init_rule_hash();
     if (code[1] == NULL){
         // must be a label, not a jump
@@ -81,12 +84,17 @@ AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
         *pointing_line = -1;
 
         *label_next_instr = true;
-        ht_set(symbol_table, label, pointing_line, hash_str_size(label));
-        strcpy(waiting_label, label);
+        ht_set(symbol_table, str_clone(label), pointing_line, hash_str_size(label));
+        WaitingLabel *waiting = alloc_wait_label(label);
+        arrlist_append(waiting_labels, waiting);
         ht_free(codes_maps);
         return NULL;
     }
     else {
+        AsmInstruction *asm_instr = calloc(1, sizeof(AsmInstruction));
+        uint32_t *instr = malloc(UI32);
+        asm_instr->code = instr;
+        asm_instr->instr_line = *instr_line; 
         // get the condition
         uint32_t int_code;
         if (code[0][1] != '\0') {
@@ -123,9 +131,9 @@ AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
             // add wait_br to the waiting instruction list;
         }
         free(label);
+        ht_free(codes_maps);
+        return asm_instr;
     }
-    ht_free(codes_maps);
-    return asm_instr;
 }
 
 

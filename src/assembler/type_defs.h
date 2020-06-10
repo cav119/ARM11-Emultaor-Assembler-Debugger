@@ -19,6 +19,10 @@ typedef struct {
 	instruction_type type;	
 } Instruction;
 
+typedef struct {
+    char *name;
+    bool solved;
+} WaitingLabel;
 // Assembler full instruction 
 typedef struct {
     uint32_t *code;
