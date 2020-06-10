@@ -17,6 +17,7 @@ uint32_t encode_sdt_instr_to_binary(char *tokens[], uint32_t curr_instr, List *d
     List *pending_offset_instr_addrs) {
 
     char cond = 0xE; // default condition code is set to 1110 in 31-28
+    AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
     uint32_t bin_code = cond << 28 | 1 << 26; // set 01 in 27-26
 
     set_ldr_str_bit(tokens[0], &bin_code);
@@ -27,8 +28,11 @@ uint32_t encode_sdt_instr_to_binary(char *tokens[], uint32_t curr_instr, List *d
         // call to encode_data_proc_inst instead (treated as a mov instr)
         // return encode_data_proc_instr(tokens);
     }
-
-    return bin_code;
+    uint32_t *actual_code = malloc(sizeof(uint32_t));
+    *actual_code = bin_code;
+    inst->code = actual_code;
+    inst->instr_line = *instr_line;
+    return inst;
 }
 
 

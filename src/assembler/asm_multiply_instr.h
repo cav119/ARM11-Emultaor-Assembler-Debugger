@@ -3,7 +3,7 @@
 
 #include "type_defs.h"
 
-Instruction *encode_multiply(char *instr[]);
+AsmInstruction *encode_multiply(char *instr[], long *instr_line);
 
 #endif
 
