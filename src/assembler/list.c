@@ -7,12 +7,18 @@ List *create_list(void){
 }
 
 void *list_get_head(List *list){
+    if (!list->head){
+        return NULL;
+    }
     return list->head->elem;
 }
 
 void *list_get_last(List *list){
     if (!list->head){
-        return list->head->elem;
+        return list_get_head(list);
+    }
+    if (!list->tail){
+        return NULL;
     }
     return list->tail->elem;
 }
