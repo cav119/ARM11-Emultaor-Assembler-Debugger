@@ -44,7 +44,7 @@ void set_ldr_str_bit(const char *token, uint32_t *bin_code) {
 }
 
 // maybe put in utils
-int read_reg_num(char *reg){
+static int read_reg_num(char *reg){
     if (reg == 0){
         return 0;
     }

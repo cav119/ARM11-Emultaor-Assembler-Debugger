@@ -1,7 +1,8 @@
 #include "parser.h"
 #include "asm_branch_instr.h"
 #include "asm_multiply_instr.h"
-#include "asm_branch_instr.h"
+#include "asm_single_data_transfer_instr.h"
+#include "asm_data_proc_instr.h"
 #include "array_list.h"
 
 
@@ -102,22 +103,21 @@ void decode_instruction(const char *instr[], long *instr_number,
         HashTable *symbol_table, ArrayList *waiting_branches,
          bool *label_next_instr, ArrayList *waiting_labels,
         List *instructions){
-
+    AsmInstruction *new_instruction;
     if (same_str(instr[0], "mul") || same_str(instr[0], "mla")){
         // Multiply instr
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
+        new_instruction = encode_multiply(instr, instr_number);
+        list_append(instructions, new_instruction);
         *instr_number += 4;
 
     }
     else if (same_str(instr[0], "ldr") || same_str(instr[0], "str")){
         // Single data transfer instr
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
+        //new_instruction = encode_sdt_instr_to_binary(instr, instr_number);
+        //list_append(instructions, new_instruction);
         *instr_number += 4;
-    }
-    else if (same_str(instr[0], "lsl") || same_str(instr[0], "andeq")){
-        // Special
-        *instr_number += 4;
-
     }
     // branch instrucntion or label
     else if (instr[0][0] == 'b' || instr[1] == NULL){
@@ -142,6 +142,14 @@ void decode_instruction(const char *instr[], long *instr_number,
     else {
         // Data processing instr
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
+        int tokens_size = 0;
+        for (tokens_size = 0; tokens_size < MAX_TOKENS; tokens_size++){
+           if (instr[tokens_size] == NULL){
+               break;
+           }
+        }
+        new_instruction = encode_dp_instr_to_binary(instr, tokens_size , instr_number);
+        list_append(instructions, new_instruction);
         *instr_number += 4;
     }
 
