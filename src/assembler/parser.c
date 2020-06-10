@@ -162,7 +162,7 @@ static int cmp_waiting_branches(const void *arg1, const void *arg2){
 static void free_tokens(char **tokens){
     for (int i = 0; i < MAX_TOKENS; i++){
         // frees every word since all of them get allocated
-        printf("Just freed : %s\n", tokens[i]);
+        //printf("Just freed : %s\n", tokens[i]);
         free(tokens[i]);
     }
     free(tokens);
