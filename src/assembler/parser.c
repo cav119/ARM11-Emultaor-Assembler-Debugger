@@ -169,7 +169,7 @@ static void free_tokens(char **tokens){
 }
 
 // function that frees a WaitingLabel
-void free_waiting_label(WaitingLabel *label){
+static void free_waiting_label(WaitingLabel *label){
     if (label == NULL){
         return;
     }
@@ -177,6 +177,14 @@ void free_waiting_label(WaitingLabel *label){
         free(label->name);
     }
     free(label);
+}
+
+static void free_asm_instr(AsmInstruction *asm_inst){
+    if (asm_inst == NULL){
+        return;
+    }
+    free(asm_inst->code);
+    free(asm_inst);
 }
 
 // Function that gets called from main
@@ -217,6 +225,7 @@ void encode_file_lines(FILE* fp){
     // this free suffices since the HT only has char *keys, and long *values
     // so there is no need for a more advanced free function
     ht_free(symbol_table);
+    list_destroy(instructions, free_asm_instr); 
 }
 
 

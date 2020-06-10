@@ -73,10 +73,6 @@ static WaitingLabel *alloc_wait_label(char *name){
 AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
                 , ArrayList *waiting_branches, bool *label_next_instr,
                               ArrayList *waiting_labels, long *instr_line){ 
-    AsmInstruction *asm_instr = calloc(1, sizeof(AsmInstruction));
-    uint32_t *instr = malloc(UI32);
-    asm_instr->code = instr;
-    asm_instr->instr_line = *instr_line; 
     HashTable *codes_maps = init_rule_hash();
     if (code[1] == NULL){
         // must be a label, not a jump
@@ -95,6 +91,10 @@ AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
         return NULL;
     }
     else {
+        AsmInstruction *asm_instr = calloc(1, sizeof(AsmInstruction));
+        uint32_t *instr = malloc(UI32);
+        asm_instr->code = instr;
+        asm_instr->instr_line = *instr_line; 
         // get the condition
         uint32_t int_code;
         if (code[0][1] != '\0') {
@@ -131,9 +131,9 @@ AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
             // add wait_br to the waiting instruction list;
         }
         free(label);
+        ht_free(codes_maps);
+        return asm_instr;
     }
-    ht_free(codes_maps);
-    return asm_instr;
 }
 
 
