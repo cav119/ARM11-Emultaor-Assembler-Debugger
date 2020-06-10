@@ -13,16 +13,17 @@ static bool set_address_bits(const char *token, uint32_t *bin_code, uint32_t cur
     List *dumped_bytes_list, List *pending_offset_instr_addrs);
 
 
-uint32_t encode_sdt_instr_to_binary(char *tokens[], uint32_t curr_instr, List *dumped_bytes_list, 
+AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], uint32_t *curr_instr, List *dumped_bytes_list, 
     List *pending_offset_instr_addrs) {
 
-    char cond = 0xE; // default condition code is set to 1110 in 31-28
     AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
+    inst->instr_line = *curr_instr;
+    char cond = 0xE; // default condition code is set to 1110 in 31-28
     uint32_t bin_code = cond << 28 | 1 << 26; // set 01 in 27-26
 
     set_ldr_str_bit(tokens[0], &bin_code);
     set_transfer_reg_bits(tokens[1], &bin_code);
-    bool not_mov = set_address_bits(tokens[2], &bin_code, curr_instr, dumped_bytes_list, pending_offset_instr_addrs);
+    bool not_mov = set_address_bits(tokens[2], &bin_code, *curr_instr, dumped_bytes_list, pending_offset_instr_addrs);
 
     if (!not_mov) {
         // call to encode_data_proc_inst instead (treated as a mov instr)
@@ -31,7 +32,6 @@ uint32_t encode_sdt_instr_to_binary(char *tokens[], uint32_t curr_instr, List *d
     uint32_t *actual_code = malloc(sizeof(uint32_t));
     *actual_code = bin_code;
     inst->code = actual_code;
-    inst->instr_line = *instr_line;
     return inst;
 }
 
