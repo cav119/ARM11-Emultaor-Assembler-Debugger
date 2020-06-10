@@ -14,11 +14,8 @@ void *list_get_head(List *list){
 }
 
 void *list_get_last(List *list){
-    if (!list->head){
-        return list_get_head(list);
-    }
     if (!list->tail){
-        return NULL;
+        return list_get_head(list);
     }
     return list->tail->elem;
 }
