@@ -168,6 +168,17 @@ static void free_tokens(char **tokens){
     free(tokens);
 }
 
+// function that frees a WaitingLabel
+void free_waiting_label(WaitingLabel *label){
+    if (label == NULL){
+        return;
+    }
+    if (label->name){
+        free(label->name);
+    }
+    free(label);
+}
+
 // Function that gets called from main
 void encode_file_lines(FILE* fp){
 
@@ -201,16 +212,10 @@ void encode_file_lines(FILE* fp){
 
     free(next_instr_to_label);
 
+    arrlist_destroy_free(waiting_labels, free_waiting_label);
     // this free suffices since the HT only has char *keys, and long *values
     // so there is no need for a more advanced free function
     ht_free(symbol_table);
-    /* for (int i = 0; i < nlines; i++) {
-       for (int j = 0; j < 5; j++) {
-       printf("j = %d , %s\n", j, array_of_words[i][j]);
-       }
-       printf("\n");
-       }*/
-    // TODO: FREE ALL HASHTABLES
 }
 
 

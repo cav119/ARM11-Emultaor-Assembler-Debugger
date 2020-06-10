@@ -88,7 +88,7 @@ AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
         *pointing_line = -1;
 
         *label_next_instr = true;
-        ht_set(symbol_table, label, pointing_line, hash_str_size(label));
+        ht_set(symbol_table, str_clone(label), pointing_line, hash_str_size(label));
         WaitingLabel *waiting = alloc_wait_label(label);
         arrlist_append(waiting_labels, waiting);
         ht_free(codes_maps);
