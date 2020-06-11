@@ -112,6 +112,8 @@ void decode_instruction(const char *instr[], long *instr_number,
         bool *label_next_instr, ArrayList *waiting_labels,
         List *instructions, List *dumped_bytes, List *pending_offset_addrs) {
     
+    if (instr[0] == NULL) return;
+
     AsmInstruction *new_instruction;
     if (same_str(instr[0], "mul") || same_str(instr[0], "mla")) {
         // Multiply instr
