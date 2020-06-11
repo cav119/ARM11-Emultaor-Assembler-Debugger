@@ -20,10 +20,12 @@ register scenario) - set size to 3 to skip the shift register option
 Returns corresponding binary instruction in big endian format*/
 AsmInstruction *encode_dp_instr_to_binary(char *instr[], uint8_t size, long *instr_line) {
     assert(size >= 3);
+
     AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
     uint32_t *code = malloc(sizeof(uint32_t));
     inst->instr_line = *instr_line;
     inst->code = code;
+
     //Check for special instruction "andeq r0, r0, r0" (halt instruction)
     if (strcmp(instr[0], "andeq") == 0
         && strcmp(instr[1], "r0") == 0
@@ -35,9 +37,11 @@ AsmInstruction *encode_dp_instr_to_binary(char *instr[], uint8_t size, long *ins
 
     //Special instruction "lsl Rn, <#expression>" - manually changes instr
     if (strcmp(instr[0], "lsl") == 0) {
-        char *new_instr[] = {"mov", instr[1], instr[1], "lsl", instr[2]};
-        instr = new_instr;
-        size = 5;
+        printf("reached here mane %s\n", instr[0]);
+        char *new_instr[] = {"mov", instr[1], instr[1], "lsl", instr[2], NULL};
+        free(code);
+        free(inst);
+        return encode_dp_instr_to_binary(new_instr, 5, instr_line);
     }
 
     //instruction parts
@@ -151,7 +155,7 @@ uint8_t get_shift_opcode(char *op) {
     } else if (strcmp(op, "ror") == 0) {
         return 3;
     } else {
-        printf("Error: Supplied shift op string is unidentifiable.");
+        perror("Error: Supplied shift op string is unidentifiable.\n");
         exit(EXIT_FAILURE);
     }
     return 0;
@@ -180,7 +184,7 @@ uint8_t get_data_proc_opcode(char *op) {
     } else if (strcmp(op, "mov") == 0) {
         return 13;
     } else {
-        printf("Error: Supplied data proc op string is unidentifiable.");
+        perror("Error: Supplied data proc op string is unidentifiable.\n");
         exit(EXIT_FAILURE);
     }
     return 0;
