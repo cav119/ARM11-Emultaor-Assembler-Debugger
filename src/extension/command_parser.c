@@ -65,43 +65,43 @@ static PrintCommand *tokens_to_print_comm(char **tokens){
     }
     PrintCommand *comm = calloc(1, sizeof(PrintCommand));
     if (same_str(tokens[1], "HEX")){
-            comm->format = HEX;
-            }
-            else if (same_str(tokens[1], "BIN")){
-                comm->format = BIN;
-                }
-                else if (same_str(tokens[1], "DEC")){
-                    comm->format = DEC;
-                    }
-                    else {
-                    // doesn't match any format
-                    free(comm);
-                    return NULL;
-                    }
-                    char *last = tokens[2];
-                    int last_len = strlen(last);
-                    if (last_len < 2){
-                    free(comm);
-                    return NULL;
-                    }
-                    if (last[0] == 'R'){
-                    comm->is_register_print = true;
-                    }
-                    else if (last[0] == 'M'){
-                    comm->is_register_print = false;
-                    }
-                    else {
-                        // wrong format
-                        free(comm);
-                        return NULL;
-                    }
-                    if (!only_numbers_str(last+1)){
-                        // has non-number characters
-                        free(comm);
-                        return NULL;
-                    }
-                    comm->print_target = atoi(last + 1);
-                    return comm;
+        comm->format = HEX;
+    }
+    else if (same_str(tokens[1], "BIN")){
+        comm->format = BIN;
+    }
+    else if (same_str(tokens[1], "DEC")){
+        comm->format = DEC;
+    }
+    else {
+        // doesn't match any format
+        free(comm);
+        return NULL;
+    }
+    char *last = tokens[2];
+    int last_len = strlen(last);
+    if (last_len < 2){
+        free(comm);
+        return NULL;
+    }
+    if (last[0] == 'R'){
+        comm->is_register_print = true;
+    }
+    else if (last[0] == 'M'){
+        comm->is_register_print = false;
+    }
+    else {
+        // wrong format
+        free(comm);
+        return NULL;
+    }
+    if (!only_numbers_str(last+1)){
+        // has non-number characters
+        free(comm);
+        return NULL;
+    }
+    comm->print_target = atoi(last + 1);
+    return comm;
 
 }
 
