@@ -30,6 +30,7 @@ static void generate_binary_code(List *instructions, FILE *outf) {
     while (curr_instr != NULL) {
         AsmInstruction *instr = curr_instr->elem;
         write_bytes(outf, *(instr->code));
+        printf("0x%x\n", *(instr->code));
         curr_instr = curr_instr->next;
     }
 }
@@ -210,22 +211,26 @@ static void free_asm_instr(AsmInstruction *asm_inst) {
 static void calculate_pending_offsets(List *instructions, List *dumped_bytes, 
     List *pending_offset_instr_addrs) {
 
-    int last_instr_idx = instructions->size - 1;
+    int last_instr_idx = instructions->size;
     ListNode *curr_bytes_node = dumped_bytes->head;
     ListNode *curr_addr_node = pending_offset_instr_addrs->head;
-    int data_index = 1;
 
     // both lists dumped_bytes and pending_offset_instr_addrs have the same size
     while (curr_bytes_node != NULL && curr_addr_node != NULL) {
         uint32_t instr_addr = *((uint32_t *)curr_addr_node->elem);
         AsmInstruction *instr = list_get_index(instructions, instr_addr);
         assert(instr != NULL);
-        *(instr->code) |= last_instr_idx + data_index - instr_addr;
-        AsmInstruction *constant_bytes = malloc(sizeof(AsmInstruction));    // freed later
+        uint32_t offset = last_instr_idx * 4 - instr_addr - PC_PIPE_LAG;
+        // if it's not the first instruction, then adjust pipeline effect
+        if (instr_addr > 0) {
+            offset -= PC_PIPE_LAG / 2 - 1;
+        }
+        *(instr->code) |= 0xFFF & abs(offset);
+        AsmInstruction *constant_bytes = malloc(sizeof(AsmInstruction));
         constant_bytes->code = curr_bytes_node->elem;
         list_append(instructions, constant_bytes);
 
-        data_index++;
+        last_instr_idx++;
         curr_bytes_node = curr_bytes_node->next;
         curr_addr_node = curr_addr_node->next;
     }
@@ -279,7 +284,7 @@ void encode_file_lines(FILE* inp_file, FILE* out_file) {
     // so there is no need for a more advanced free function
     ht_free(symbol_table);
     list_destroy(instructions, free_asm_instr);
-    list_destroy(dumped_bytes, free);
-    list_destroy(pending_offset_instr_addrs, free);
+    // list_destroy(dumped_bytes, free);
+    // list_destroy(pending_offset_instr_addrs, free);
 }
 

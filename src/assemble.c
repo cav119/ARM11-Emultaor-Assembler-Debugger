@@ -52,8 +52,8 @@ void test_arrl(void){
 }
 
 int main(int argc, char **argv) {
-    test_arrl();
-    test_ht();
+    // test_arrl();
+    // test_ht();
     assert (argc == 3);
 
     FILE *inp_file = fopen(argv[1], "r");

@@ -6,11 +6,13 @@
 #include "asm_single_data_transfer_instr.h"
 #include "asm_data_proc_instr.h"
 
+#include "asm_utilities.h"
+
 
 // Internal helper functions 
 static void set_ldr_str_bit(const char *token, uint32_t *bin_code);
 static void set_transfer_reg_bits(const char *token, uint32_t *bin_code);
-static bool set_address_bits(const char *token, uint32_t *bin_code, uint32_t curr_instr, 
+static bool set_address_bits(char *tokens[], uint32_t *bin_code, uint32_t curr_instr, 
     List *dumped_bytes_list, List *pending_offset_instr_addrs);
 
 
@@ -20,11 +22,12 @@ AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], uint32_t *curr_instr,
     AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
     inst->instr_line = *curr_instr;
     char cond = 0xE; // default condition code is set to 1110 in 31-28
-    uint32_t bin_code = cond << 28 | 1 << 26; // set 01 in 27-26
+    uint32_t bin_code = cond << 28 | 1 << 26 | 1 << 23; // set 01 in 27-26 and 1 for the U bit
 
     set_ldr_str_bit(tokens[0], &bin_code);
     set_transfer_reg_bits(tokens[1], &bin_code);
-    bool not_mov = set_address_bits(tokens[2], &bin_code, *curr_instr, dumped_bytes_list, pending_offset_instr_addrs);
+    bool not_mov = set_address_bits(tokens, &bin_code, *curr_instr, dumped_bytes_list, 
+        pending_offset_instr_addrs);
 
     if (!not_mov) {
         // call to encode_data_proc_inst instead (treated as a mov instr)
@@ -67,8 +70,6 @@ static int read_reg_num(char *reg){
 void set_transfer_reg_bits(const char *token, uint32_t *bin_code) {
     char reg_num = read_reg_num(token);
     *bin_code |= reg_num << 12; // set bits 15-12 for Rd
-
-    printf("Rd = %d\n", reg_num);
 }
 
 
@@ -102,8 +103,9 @@ uint32_t parse_constant_address(char *token) {
 
 
 // Returns true if post-indexed formatted address, false if pre-indexed
-bool is_post_indexed_address(char *token) {
+bool is_post_indexed_address(char *tokens[]) {
     // check that: [rX], or [rXX], are the first letters of the expression
+    char *token = tokens[2];
     if (token[0] == '[' && token[1] == 'r') {
         return (token[3] == ']' && token[4] == ',' && token[5] != '\0') ||
             (token[4] == ']' && token[5] == ',' && token[6] != '\0');
@@ -129,45 +131,58 @@ uint16_t get_base_reg_indexed(char *base_reg_str) {
 }
 
 // Helper function that gets the numeric offset (removes any leading # char)
-uint32_t get_numeric_offset(char *offset_str) {
-    int base = offset_str[2] == 'x' ? 16 : 10;
-    char offset_num_str[strlen(offset_str) - 1];
-    memcpy(offset_num_str, &offset_str[1], strlen(offset_str));
-    offset_num_str[strlen(offset_str) - 1] = '\0';
-
+int32_t get_numeric_offset(char *offset_str) {
+    int base = offset_str[2] == 'x' || offset_str[3] == 'x' ? 16 : 10;
+    
+    int32_t offset;
     char *end;
-    uint32_t offset = strtol(offset_num_str, &end, base);
-    return offset;
+
+    // if negative, string length is one less
+    int len = offset_str[1] == '-' ? 2 : 1;
+
+    char offset_num_str[strlen(offset_str) - len];
+    memcpy(offset_num_str, &offset_str[len], strlen(offset_str));
+    offset_num_str[strlen(offset_str) - len] = '\0';
+    offset = strtol(offset_num_str, &end, base);
+    
+    return (len == 1 ? offset : -offset);
 }
 
 
 // Sets the bits if pre-indexed
-void set_pre_indexed_address_bits(char *token, uint32_t *bin_code) {
-    char *reg_str = strtok(token, ","); 
-    char *expr_str = strtok(NULL, ","); 
+void set_pre_indexed_address_bits(char *tokens[], uint32_t *bin_code) {
+    char *reg_str = tokens[2];
+    char *expr_str = tokens[3];
+
+    printf("expression str: %s\n", expr_str);
 
     uint16_t reg_val = get_base_reg_indexed(reg_str);
-    uint32_t offset = 0;
+    int32_t offset = 0;
 
-    // If expression is empty
+    // If expression is not empty
     if (expr_str != NULL) {
-        printf("empty expression, set offset to 0\n");
         offset = get_numeric_offset(expr_str);
+        printf("returned offset: %d\n", offset);
+    }
+
+    if (offset < 0) {
+        *bin_code &= ~(0x1 << 23); // if negative offset, U (bit 23) should be off
+        offset = -offset;
     }
 
     printf("reg value = %d\n", reg_val);
     printf("OFFSET value = 0x%x\n", offset);
 
-    *bin_code |= offset;        // set offset at 11-0
+    *bin_code |= (uint32_t) offset;        // set offset at 11-0
     *bin_code |= reg_val << 16; // set Rn at 19-16
     *bin_code |= 1 << 24;       // set P bit at 24 (Pre indexed)
 }
 
 
 // Sets the bits if post-indexed
-void set_post_indexed_address_bits(char *token, uint32_t *bin_code) {
-    char *base_reg_str = strtok(token, ","); 
-    char *offset_str = strtok(NULL, ","); 
+void set_post_indexed_address_bits(char *tokens[], uint32_t *bin_code) {
+    char *base_reg_str = tokens[2];
+    char *offset_str = tokens[3];
     
     // get offset
     uint32_t offset = get_numeric_offset(offset_str);
@@ -182,44 +197,37 @@ void set_post_indexed_address_bits(char *token, uint32_t *bin_code) {
 
 // Sets all other bits that rely on the addressing: I, P, U, Rn and Offset
 // If a MOV instruction is to be called, it returns false
-bool set_address_bits(const char *token, uint32_t *bin_code, uint32_t curr_instr_addr, 
+bool set_address_bits(char *tokens[], uint32_t *bin_code, uint32_t curr_instr_addr, 
     List *dumped_bytes_list, List *pending_offset_instr_addrs) {
 
-    char tok_copy[strlen(token) + 1];
-    strcpy(tok_copy, token);
-
     // Handle constant numeric address
-    if (is_constant_address(tok_copy) && (*bin_code & (1 << 20))) {
-        uint32_t address_const = parse_constant_address(tok_copy);
-        // printf("constant address: %d\n", address_expr);
+    if (is_constant_address(tokens[2]) && (*bin_code & (1 << 20))) {
+        uint32_t address_const = parse_constant_address(tokens[2]);
         if (address_const <= 0xFF) {
             return false;
         }
 
-        // deal with general case
-        // add to pending_offset_instr_addrs the address of this instr (curr_instr_addr)
-        // leave the offset uncalculated (these bits are set later)
+        *bin_code |= 1 << 24;       // set P bit at 24 (constant expr is pre-indexed by default)
+        *bin_code |= 0xF << 16;     // set Rn to 0xF (not used)
 
-        // add bytes to the list
+        // add bytes to the list to be dumped later
         void *bytes = malloc(sizeof(uint32_t));
         *((uint32_t *) bytes) = address_const;
         list_append(dumped_bytes_list, bytes);
 
         // mark the address of this instruction as pending for the offset calculation
         void *index = malloc(sizeof(uint32_t));
-        *((uint32_t *) index) = curr_instr_addr;
+        *((uint32_t *) index) = curr_instr_addr / 4;
         list_append(pending_offset_instr_addrs, index);
         
         return true;
     }
 
     // Handle pre/post indexing addresses
-    if (is_post_indexed_address(tok_copy)) {
-        printf("IS POST INDEXED\n");
-        set_post_indexed_address_bits(tok_copy, bin_code);
+    if (is_post_indexed_address(tokens)) {
+        set_post_indexed_address_bits(tokens, bin_code);
     } else {
-        printf("IS PRE INDEXED\n");
-        set_pre_indexed_address_bits(tok_copy, bin_code);
+        set_pre_indexed_address_bits(tokens, bin_code);
     }
 
     return true;
