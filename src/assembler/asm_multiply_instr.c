@@ -13,7 +13,7 @@ AsmInstruction *encode_multiply(char *instr[], long *instr_line){
     *n|= read_red_num(instr[2]);
     *n|= (read_red_num(instr[3]) << 8);
 
-    if (strcasecmp(instr[0], "mull") != 0){
+    if (strcasecmp(instr[0], "mul") != 0){
         *n = setBit(*n, 21);
         *n|= (read_red_num(instr[4]) << 12);
     }
