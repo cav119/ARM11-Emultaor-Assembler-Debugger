@@ -135,10 +135,11 @@ static ExecutableCommand *parse(char *input){
             return NULL;
         }
         PrintCommand *print = tokens_to_print_comm(tokens);
+        for (int i = 0; i < 3; i++){
+            free(tokens[i]);
+        }
+        free(tokens);
         if (!print){
-            for (int i = 0; i < 3; i++){
-                free(tokens[i]);
-            }
             free(comm);
             return NULL;
         }
