@@ -5,6 +5,8 @@
 #include "utilities.h"
 #include "pipeline_executor.h"
 #include "pipeline_data.h"
+#include "../extension/command_parser.h"
+
 
 // If running the extension, output this message to stdout
 #define EXTENSION_WRITE(is_ext, msg) \
@@ -106,6 +108,10 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         pipe->decoding = decode_instruction(pipe->fetching);
 
         bool branch_instr_succeeded = false;
+        if (is_extension & get_input_and_execute(cpu_state)){
+            // must have hit the exit command
+            return;
+        }
         if (pipe->executing) {
             instruction_type type = pipe->executing->type;
             bool succeeded = execute(pipe->executing,cpu_state, pipe);

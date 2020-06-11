@@ -1,8 +1,6 @@
 
 
 #include "command_parser.h"
-#include "../emulator/cpu_state.h"
-#define MAX_COMMAND_LEN (100)
 
 static bool same_str(char *str1, char *str2){
     if (!str1 || !str2){
@@ -40,6 +38,7 @@ static char** tokenize_print_instr(char *instr){
         free(tokens);
         return NULL;
     }
+    return tokens;
 }
 
 static bool only_numbers_str(char *str){
@@ -105,7 +104,7 @@ static PrintCommand *tokens_to_print_comm(char **tokens){
 
 }
 
-ExecutableCommand *parse(char *input){
+static ExecutableCommand *parse(char *input){
     ExecutableCommand *comm = calloc(1, sizeof(ExecutableCommand));
     // could be handled more nicely with a hashtable
     // but there's no reason to allocate so much memory just for 4 command types
@@ -143,7 +142,7 @@ ExecutableCommand *parse(char *input){
     return comm;    
 }
 
-void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
+static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
     if (!comm){
         return;
     }
@@ -166,7 +165,7 @@ void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
     }
 }
 
-bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
+static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
     switch (comm->type)  {
         case RUN_CMD:
             puts("Running code");
@@ -189,14 +188,17 @@ bool get_input_and_execute(CpuState *cpu_state){
     char input[MAX_COMMAND_LEN];
     printf(PROMPT_TXT);
     fgets(input, MAX_COMMAND_LEN, stdin);
-    ExecutableCommand *comm = parse(input);    
-    if (comm = NULL){
+
+    // gets rid of the trailing \n
+    input[strlen(input)- 1] = '\0';
+    ExecutableCommand *comm = parse(input);
+    if (comm == NULL){
         puts("You gave me a wrong command. Type 'help' if you don't know the commands'");
-        get_input_and_execute(cpu_state);
+        return get_input_and_execute(cpu_state);
     }
     bool ending = execute_command(comm, cpu_state);
     if (!ending && comm->type != NEXT_CMD && comm->type != RUN_CMD) {
-        get_input_and_execute(cpu_state);
+        return get_input_and_execute(cpu_state);
     }
     if (ending){
         return true;

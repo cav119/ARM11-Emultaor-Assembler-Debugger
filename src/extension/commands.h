@@ -6,18 +6,17 @@
 
 #define PROMPT_TXT ("> ")
 #define PROMPT_SIZE 2
-#define STRING(str) #str
 
-#define RUN_CMD_L STRING("run")
-#define RUN_CMD_S STRING("r")
-#define NEXT_CMD_L STRING("next")
-#define NEXT_CMD_S STRING("n")
-#define BREAK_CMD_S STRING("b")
-#define BREAK_CMD_L STRING("break")
-#define PRINT_CMD_S STRING("p")
-#define PRINT_CMD_L STRING("print")
-#define EXIT_CMD_L STRING("exit")
-#define EXIT_CMD_S STRING("ex")
+#define RUN_CMD_L ("run")
+#define RUN_CMD_S ("r")
+#define NEXT_CMD_L ("next")
+#define NEXT_CMD_S ("n")
+#define BREAK_CMD_S ("b")
+#define BREAK_CMD_L ("break")
+#define PRINT_CMD_S ("p")
+#define PRINT_CMD_L ("print")
+#define EXIT_CMD_L ("exit")
+#define EXIT_CMD_S ("ex")
 
 // print command examples:
 // print HEX R15
