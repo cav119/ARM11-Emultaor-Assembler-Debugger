@@ -6,6 +6,9 @@
 #include "pipeline_executor.h"
 #include "pipeline_data.h"
 
+// If running the extension, output this message to stdout
+#define EXTENSION_WRITE(is_ext, msg) \
+    do { if (is_ext) { puts(msg); } } while (0)
 
 Pipe *init_pipeline(CpuState *cpu_state) {
     Pipe *pipe = calloc(1, sizeof(Pipe));
@@ -97,7 +100,7 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
 
 // Internal helper recursive function for the pipeline execution, makes the code
 // cleaner and as efficient using gcc's tail call optimisation
-static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe) {
+static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension) {
     if (pipe->fetching) {
         pipe->executing = pipe->decoding;
         pipe->decoding = decode_instruction(pipe->fetching);
@@ -109,23 +112,29 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe) {
             if (succeeded && type == BRANCH) {
                 branch_instr_succeeded = true;
             }
+            // execute() should also print the effect of the instruction to stdout if
+            // the running program is an extension
+        }
+        else {
+            EXTENSION_WRITE(is_extension, "No command is being executed at the moment");
         }
         if (!branch_instr_succeeded) {
             pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
             increment_pc(cpu_state);
         }
-        start_pipeline_helper(cpu_state, pipe);
+        // Ask user for input
+        start_pipeline_helper(cpu_state, pipe, is_extension);
     } else {
         bool ended = end_pipeline(pipe, cpu_state);
         if (!ended) {
-            start_pipeline_helper(cpu_state, pipe);
+            start_pipeline_helper(cpu_state, pipe, is_extension);
         }
     }
 }
 
 
-void start_pipeline(CpuState *cpu_state) {
-    start_pipeline_helper(cpu_state, init_pipeline(cpu_state));
+void start_pipeline(CpuState *cpu_state, bool is_extension) {
+    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension);
 }
 
 
