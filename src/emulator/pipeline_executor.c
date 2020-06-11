@@ -5,7 +5,12 @@
 #include "utilities.h"
 #include "pipeline_executor.h"
 #include "pipeline_data.h"
+#include "../extension/command_parser.h"
 
+
+// If running the extension, output this message to stdout
+#define EXTENSION_WRITE(is_ext, msg) \
+    do { if (is_ext) { puts(msg); } } while (0)
 
 Pipe *init_pipeline(CpuState *cpu_state) {
     Pipe *pipe = calloc(1, sizeof(Pipe));
@@ -24,6 +29,17 @@ uint32_t fetch(uint32_t ptr, CpuState *cpu_state) {
 
     return index_little_endian_bytes(&(cpu_state->memory[ptr]));
 }
+
+uint32_t fetch_big_endian(uint32_t ptr, CpuState *cpu_state) {
+    bool valid = check_valid_memory_access(cpu_state, ptr);
+    if (!valid) {
+        return 0;
+    }
+
+    return index_big_endian_bytes(&(cpu_state->memory[ptr]));
+}
+
+
 
 
 bool is_branch_instr(uint32_t bits) {
@@ -97,39 +113,57 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
 
 // Internal helper recursive function for the pipeline execution, makes the code
 // cleaner and as efficient using gcc's tail call optimisation
-static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe) {
+static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension) {
     if (pipe->fetching) {
         pipe->executing = pipe->decoding;
         pipe->decoding = decode_instruction(pipe->fetching);
 
         bool branch_instr_succeeded = false;
+        if (is_extension && get_input_and_execute(cpu_state)){
+            // must have hit the exit command
+            // need to free pipe before aborting
+            if (pipe->executing){
+                free(pipe->executing);
+            }
+            if (pipe->decoding){
+                free(pipe->decoding);
+            }
+            free(pipe);
+            return;
+        }
         if (pipe->executing) {
             instruction_type type = pipe->executing->type;
             bool succeeded = execute(pipe->executing,cpu_state, pipe);
             if (succeeded && type == BRANCH) {
                 branch_instr_succeeded = true;
             }
+            // execute() should also print the effect of the instruction to stdout if
+            // the running program is an extension
+        }
+        else {
+            EXTENSION_WRITE(is_extension, "No command is being executed at the moment");
         }
         if (!branch_instr_succeeded) {
             pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
             increment_pc(cpu_state);
         }
-        start_pipeline_helper(cpu_state, pipe);
+        // Ask user for input
+        start_pipeline_helper(cpu_state, pipe, is_extension);
     } else {
-        bool ended = end_pipeline(pipe, cpu_state);
+        bool ended = end_pipeline(pipe, cpu_state, is_extension);
         if (!ended) {
-            start_pipeline_helper(cpu_state, pipe);
+            start_pipeline_helper(cpu_state, pipe, is_extension);
         }
     }
 }
 
 
-void start_pipeline(CpuState *cpu_state) {
-    start_pipeline_helper(cpu_state, init_pipeline(cpu_state));
+void start_pipeline(CpuState *cpu_state, bool is_extension) {
+    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension);
 }
 
 
-bool end_pipeline(Pipe *pipe, CpuState *cpu_state) {
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension) {
     // Must have fetched a halt
     // since it stops when fetching a halt the block of code simulates executing 2 cycles
     // first executing pipe->executing, and then pipe->decoding

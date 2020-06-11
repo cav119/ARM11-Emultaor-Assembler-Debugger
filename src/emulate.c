@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     
 
     // Start execution of program
-    start_pipeline(cpu_state);
+    start_pipeline(cpu_state, false);
 
     // Print state of program for testing
     print_registers(cpu_state);

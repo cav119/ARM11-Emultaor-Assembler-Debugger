@@ -22,6 +22,10 @@ uint32_t index_little_endian_bytes(uint8_t *ptr) {
     return *ptr | (*(ptr + 1) << 8) | (*(ptr + 2) << 16) | (*(ptr + 3) << 24);;
 }
 
+uint32_t index_big_endian_bytes(uint8_t *ptr){
+    return *ptr << 24 | ptr[1] << 16 | ptr[2] << 8 | ptr[3];
+}
+
 
 uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos) {
     uint32_t mask = (1 << (end_pos + 1 - start_pos)) - 1;
