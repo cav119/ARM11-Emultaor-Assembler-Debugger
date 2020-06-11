@@ -28,7 +28,8 @@ char **instr_to_tokens(char array[]) {
 static void generate_binary_code(List *instructions, FILE *outf) {
     ListNode *curr_instr = instructions->head;
     while (curr_instr != NULL) {
-        write_bytes(outf, *((uint32_t *)curr_instr->elem));
+        AsmInstruction *instr = curr_instr->elem;
+        write_bytes(outf, *(instr->code));
         curr_instr = curr_instr->next;
     }
 }
