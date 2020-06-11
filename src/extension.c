@@ -7,7 +7,6 @@
 #include "emulator/cpu_state.h"
 #include "emulator/utilities.h"
 #include "emulator/pipeline_executor.h"
-#include "emulator/pipeline_data.h"
 
 
 int main(int argc, char *argv[]) {
@@ -38,6 +37,7 @@ int main(int argc, char *argv[]) {
     // Print state of program for testing
     print_registers(cpu_state);
     print_nonzero_big_endian_memory(cpu_state, MEMORY_SIZE);
+
 
     cpu_state_free(cpu_state);
 

@@ -1,6 +1,8 @@
 
 
 #include "command_parser.h"
+#include "../emulator/pipeline_executor.h" 
+#include "extension_utilities.h"
 
 static bool same_str(char *str1, char *str2){
     if (!str1 || !str2){
@@ -142,26 +144,38 @@ static ExecutableCommand *parse(char *input){
     return comm;    
 }
 
+#define MAX_REG (16)
+#define MAX_MEMORY (65532)
+
 static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
     if (!comm){
         return;
     }
     uint32_t target;
     if (comm->is_register_print){
+        if ( ! (comm->print_target <= MAX_REG) ){
+            printf("Invalid register number\n");
+            return;
+        }
         target = cpu_state->registers[comm->print_target];
     }
     else {
         // print little endian memory
-        target = 0;
+        if ( ! (comm->print_target <= MAX_MEMORY) || (comm->print_target % 4 != 0) ){
+            printf("Invalid memory address\n");
+            return;
+        }
+        target = fetch_big_endian(comm->print_target, cpu_state);
     }
     if (comm->format == BIN){
         //commbits_32(target);
+        print_bits_32(target);
     }
     else if (comm->format == HEX) {
-        printf("$: 0x%0.8x", target);
+        printf("$: 0x%0.8x\n", target);
     }
     else {
-        printf("$: %d", target);
+        printf("$: %d\n", target);
     }
 }
 

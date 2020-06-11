@@ -30,6 +30,17 @@ uint32_t fetch(uint32_t ptr, CpuState *cpu_state) {
     return index_little_endian_bytes(&(cpu_state->memory[ptr]));
 }
 
+uint32_t fetch_big_endian(uint32_t ptr, CpuState *cpu_state) {
+    bool valid = check_valid_memory_access(cpu_state, ptr);
+    if (!valid) {
+        return 0;
+    }
+
+    return index_big_endian_bytes(&(cpu_state->memory[ptr]));
+}
+
+
+
 
 bool is_branch_instr(uint32_t bits) {
     // bits 27-24  are 1010
@@ -108,7 +119,7 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         pipe->decoding = decode_instruction(pipe->fetching);
 
         bool branch_instr_succeeded = false;
-        if (is_extension & get_input_and_execute(cpu_state)){
+        if (is_extension && get_input_and_execute(cpu_state)){
             // must have hit the exit command
             return;
         }
@@ -131,7 +142,7 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         // Ask user for input
         start_pipeline_helper(cpu_state, pipe, is_extension);
     } else {
-        bool ended = end_pipeline(pipe, cpu_state);
+        bool ended = end_pipeline(pipe, cpu_state, is_extension);
         if (!ended) {
             start_pipeline_helper(cpu_state, pipe, is_extension);
         }
@@ -144,7 +155,7 @@ void start_pipeline(CpuState *cpu_state, bool is_extension) {
 }
 
 
-bool end_pipeline(Pipe *pipe, CpuState *cpu_state) {
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension) {
     // Must have fetched a halt
     // since it stops when fetching a halt the block of code simulates executing 2 cycles
     // first executing pipe->executing, and then pipe->decoding

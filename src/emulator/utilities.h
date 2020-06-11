@@ -21,6 +21,10 @@ bool check_valid_memory_access(CpuState *cpu_state, uint32_t address);
 // first byte
 uint32_t index_little_endian_bytes(uint8_t *ptr);
 
+// Rearranges a four byte word into big  endian form given the pointer to the
+// first byte
+uint32_t index_big_endian_bytes(uint8_t *ptr);
+
 // Returns the masked bit pattern from start to end of a number, 
 // shifted to the beggining for readability
 uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos);

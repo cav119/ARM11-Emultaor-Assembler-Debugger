@@ -11,8 +11,11 @@
 // Initialises and allocates memory for a Pipe struct
 Pipe *init_pipeline(CpuState *cpu_state);
 
-// Fetches the next instruction from memory from the given ptr address
+// Fetches the next instruction from memory from the given ptr address, returns a little endian number
 uint32_t fetch(uint32_t ptr, CpuState *cpu_state);
+
+// Fetches the next instruction from memory from the given ptr address, returns a big endian number
+uint32_t fetch_big_endian(uint32_t ptr, CpuState *cpu_state);
 
 // Decodes the 4 byte instruction and returns a pointer to Instruction struct
 Instruction *decode_instruction(uint32_t bits);
@@ -25,7 +28,7 @@ void start_pipeline(CpuState *cpu_state, bool is_extenstion);
 
 // Possibly ends the pipeline, returns true if pipeline was indeed ended
 // Return value true can be caused by a branch instruction which forces code to continue
-bool end_pipeline(Pipe *pipe, CpuState *cpu_state);
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension);
 
 // After executing a branch instruction cpu must clear pipeline
 void clear_pipe(Pipe *pipe);
