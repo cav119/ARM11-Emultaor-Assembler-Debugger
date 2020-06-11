@@ -121,6 +121,14 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         bool branch_instr_succeeded = false;
         if (is_extension && get_input_and_execute(cpu_state)){
             // must have hit the exit command
+            // need to free pipe before aborting
+            if (pipe->executing){
+                free(pipe->executing);
+            }
+            if (pipe->decoding){
+                free(pipe->decoding);
+            }
+            free(pipe);
             return;
         }
         if (pipe->executing) {

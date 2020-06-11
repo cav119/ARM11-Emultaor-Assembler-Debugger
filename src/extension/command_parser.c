@@ -110,7 +110,10 @@ static ExecutableCommand *parse(char *input){
     ExecutableCommand *comm = calloc(1, sizeof(ExecutableCommand));
     // could be handled more nicely with a hashtable
     // but there's no reason to allocate so much memory just for 4 command types
-    if (same_str(input, RUN_CMD_L) || same_str(input, RUN_CMD_S)){
+    if (same_str(input, HELP_CMD_L)){
+        comm->type = HELP_CMD;
+    }
+    else if (same_str(input, RUN_CMD_L) || same_str(input, RUN_CMD_S)){
         comm->type = RUN_CMD; 
     }
     else if (same_str(input, NEXT_CMD_L) || same_str(input, NEXT_CMD_S)){
@@ -179,8 +182,19 @@ static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
     }
 }
 
+static void print_help_comm(void){
+    puts("Use 'n' or 'next' to go to the next command");
+    puts("Or print <FORMAT> <LOCATION><NUMBER> to print the state");
+    printf("Where the format can be 'BIN' or 'HEX' or 'DEC', location can");
+    puts(" be 'R' for registers, 'M' for memory and the number must be a positive integer");
+    puts("Also, you can also use 'print' instead of 'p' for printing");
+}
+
 static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
     switch (comm->type)  {
+        case HELP_CMD:
+            print_help_comm();
+            break;            
         case RUN_CMD:
             puts("Running code");
             break;
@@ -212,10 +226,16 @@ bool get_input_and_execute(CpuState *cpu_state){
     }
     bool ending = execute_command(comm, cpu_state);
     if (!ending && comm->type != NEXT_CMD && comm->type != RUN_CMD) {
+        if (comm->command.print){
+            free(comm->command.print);
+        }
+        free(comm);
         return get_input_and_execute(cpu_state);
     }
     if (ending){
+        free(comm);
         return true;
     }
+    free(comm);
     return false;
 }
