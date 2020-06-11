@@ -55,14 +55,19 @@ int main(int argc, char **argv) {
     test_arrl();
     test_ht();
     assert (argc == 3);
-    FILE *file = fopen(argv[1], "r");
-    check_pointer(file, "File not found");
+
+    FILE *inp_file = fopen(argv[1], "r");
+    check_pointer(inp_file, "File not found");
+
+    FILE *out_file = fopen(argv[2], "wb");
+    check_pointer(out_file, "File not found");
 
     //int line_number = count_lines(file);
     //char **lines = parse_to_array(file, line_number);
 
-    encode_file_lines(file);
-    fclose(file);
+    encode_file_lines(inp_file, out_file);
+    fclose(inp_file);
+    fclose(out_file);
 
     return 0;
 }

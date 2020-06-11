@@ -28,8 +28,6 @@ typedef struct list {
 
 
 
-
-
 // returns an empty heap-allocated list, with NULL values
 List *create_list(void);
 
@@ -46,7 +44,7 @@ void list_del_head(List *list, void (*free_fun)(void *));
 void list_del_last(List *list, void (*free_fun)(void *));
 
 // Gets the element at index if it's within bounds, else NULL
-static void *list_get_index(List *list, int index);
+void *list_get_index(List *list, int index);
 
 // adds an element to the back of the list
 void list_append(List *list, void *elem);

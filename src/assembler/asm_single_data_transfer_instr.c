@@ -206,33 +206,7 @@ bool set_address_bits(const char *token, uint32_t *bin_code, uint32_t curr_instr
         void *index = malloc(sizeof(uint32_t));
         *((uint32_t *) index) = curr_instr_addr;
         list_append(pending_offset_instr_addrs, index);
-
-        /* Once all the instructions have been encoded and placed in an instruction table
-           ready to be written to the file, do the following (in the parser.c file):
-
-            // uint32_t instruction_array[] holds all the instruction bytes (4 bytes per element) after being encoded in the main parse loop
-
-           // IN THEORY, THERE SHOULD BE THE SAME NUMBER OF ELEMENTS IN BOTH LISTS,
-           // EACH CORRESPONDING TO THE ADDR OF THE INSTR IN WHICH TO CALCULATE THE OFFSET
-           // loop through both lists
-           int last_instr_idx = total number of instructions - 1;
-           ListNode *curr_bytes_node = dumped_bytes_list->head;
-           ListNode *curr_addr_node = pending_offset_instr_addrs->head;
-           int data_index = 1;
-           while (curr_bytes_node != NULL && curr_addr_node != NULL) {
-               uint32_t instr_addr = *((int *)pending_offset_instr_addrs->elem);    // this is the index to the instruction array of a pending instruction
-               instruction_array[instr_addr] |= (last_instr_idx + data_index - instr_addr) // set offset bits as needed
-               instruction_array[last_instr_idx + data_index] = *((uint32_t *)curr_bytes_node->elem); // write the bytes at the end of array
-               data_index++;
-               curr_node = curr_node->next;
-               curr_addr_node = curr_addr_node->next;
-           }
-
-           // write the instruction array to the file
-
-           // free both lists and other data structurs
-        */
-
+        
         return true;
     }
 

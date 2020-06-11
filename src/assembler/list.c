@@ -79,7 +79,7 @@ bool index_ok(List *list, int index){
     return index >= 0 && index < list->size;
 }
 
-static void *list_get_index(List *list, int index){
+void *list_get_index(List *list, int index){
     if (!index_ok(list, index)){
       return NULL;  
     }

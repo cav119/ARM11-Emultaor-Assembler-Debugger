@@ -31,3 +31,13 @@ char **parse_to_array(FILE *file, int lines){
     return array;
 }
 
+void write_bytes(FILE *ouput_file, uint32_t bin_code) {
+    char bytes[] = {
+        process_mask(bin_code, 0, 7),
+        process_mask(bin_code, 8, 15),
+        process_mask(bin_code, 16, 23),
+        process_mask(bin_code, 24, 31),
+    };
+
+    fwrite(bytes, 1, 4, ouput_file);
+}
