@@ -35,7 +35,10 @@ AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], uint32_t *curr_instr,
             }
         }
         free(inst);
-        return encode_dp_instr_to_binary(tokens, tokens_size, curr_instr);
+
+        tokens[2][0] = '#';
+        char *mov_instr[] = {"mov", tokens[1], tokens[2]};
+        return encode_dp_instr_to_binary(mov_instr, tokens_size, curr_instr);
     }
     uint32_t *actual_code = malloc(sizeof(uint32_t));
     *actual_code = bin_code;

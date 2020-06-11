@@ -37,7 +37,6 @@ AsmInstruction *encode_dp_instr_to_binary(char *instr[], uint8_t size, long *ins
 
     //Special instruction "lsl Rn, <#expression>" - manually changes instr
     if (strcmp(instr[0], "lsl") == 0) {
-        printf("reached here mane %s\n", instr[0]);
         char *new_instr[] = {"mov", instr[1], instr[1], "lsl", instr[2], NULL};
         free(code);
         free(inst);
