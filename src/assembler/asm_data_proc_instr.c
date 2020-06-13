@@ -4,15 +4,17 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "asm_utilities.h"
+
+
 //Private helper function declarations:
-uint16_t compute_operand_2(const char *expression[], uint8_t *i_bit, uint8_t size); 
-uint16_t compute_imm_expression(const char *expression); 
-uint16_t compute_operand_2_shift(const char *expression[]);
-uint8_t get_data_proc_opcode(char *op);
-uint16_t read_reg_num(char *reg);
-uint32_t rotate_left(uint32_t operand, uint32_t rotate_amt);
-uint8_t get_shift_opcode(char *op);
-uint32_t read_imm_val(const char *expression);
+static uint16_t compute_operand_2(const char *expression[], uint8_t *i_bit, uint8_t size); 
+static uint16_t compute_imm_expression(const char *expression); 
+static uint16_t compute_operand_2_shift(const char *expression[]);
+static uint8_t get_data_proc_opcode(char *op);
+static uint32_t rotate_left(uint32_t operand, uint32_t rotate_amt);
+static uint8_t get_shift_opcode(char *op);
+static uint32_t read_imm_val(const char *expression);
 
 /*Takes in the data proc instruction as an array of strings (split up)
 Size is the number of tokens in instr[] (needed for optional shift
@@ -189,13 +191,6 @@ uint8_t get_data_proc_opcode(char *op) {
     return 0;
 }
 
-//read_reg_num is temporary function using read_red_num from assemble.c
-uint16_t read_reg_num(char *reg) {
-    if (reg == 0) {
-        return 0;
-    }
-    return atoi(strtok(reg, "r"));
-}
 
 //Rotates left operand by rotate_amt
 uint32_t rotate_left(uint32_t operand, uint32_t rotate_amt) {

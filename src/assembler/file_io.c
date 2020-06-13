@@ -21,15 +21,6 @@ int count_lines(FILE *file){
     return count;
 }
 
-char **parse_to_array(FILE *file, int lines){
-    char **array = (char **) malloc(lines * sizeof(char *));
-
-    for (int i = 0; i < lines ; i++) {
-        array[i] = (char *) malloc(MAX_LINE_LENGTH * sizeof(char));
-        fgets(array[i], MAX_LINE_LENGTH, file);
-    }
-    return array;
-}
 
 void write_bytes(FILE *ouput_file, uint32_t bin_code) {
     char bytes[] = {

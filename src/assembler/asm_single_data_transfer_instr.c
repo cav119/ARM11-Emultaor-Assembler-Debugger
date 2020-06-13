@@ -9,20 +9,20 @@
 #include "asm_utilities.h"
 
 
-// Internal helper functions 
+// Internal helper functions for setting the bits of the binary code
 static void set_ldr_str_bit(const char *token, uint32_t *bin_code);
-static void set_transfer_reg_bits(const char *token, uint32_t *bin_code);
+static void set_transfer_reg_bits(char *token, uint32_t *bin_code);
 static bool set_address_bits(char *tokens[], uint32_t *bin_code, uint32_t curr_instr, 
     List *dumped_bytes_list, List *pending_offset_instr_addrs);
 
 
-AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], uint32_t *curr_instr, List *dumped_bytes_list, 
-    List *pending_offset_instr_addrs) {
+AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], long *curr_instr,
+    List *dumped_bytes_list, List *pending_offset_instr_addrs) {
 
     AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
     inst->instr_line = *curr_instr;
-    char cond = 0xE; // default condition code is set to 1110 in 31-28
-    uint32_t bin_code = cond << 28 | 1 << 26 | 1 << 23; // set 01 in 27-26 and 1 for the U bit
+    // set condition code, up bit and 01 format bits
+    uint32_t bin_code = 0xE << 28 | 1 << 26 | 1 << 23;
 
     set_ldr_str_bit(tokens[0], &bin_code);
     set_transfer_reg_bits(tokens[1], &bin_code);
@@ -57,17 +57,9 @@ void set_ldr_str_bit(const char *token, uint32_t *bin_code) {
     }
 }
 
-// maybe put in utils
-static int read_reg_num(char *reg){
-    if (reg == 0){
-        return 0;
-    }
-    
-    return atoi(strtok(reg, "r"));
-}
 
 // Sets the transfer register (Rd) bits (15-12) in the binary code
-void set_transfer_reg_bits(const char *token, uint32_t *bin_code) {
+void set_transfer_reg_bits(char *token, uint32_t *bin_code) {
     char reg_num = read_reg_num(token);
     *bin_code |= reg_num << 12; // set bits 15-12 for Rd
 }
@@ -154,24 +146,18 @@ void set_pre_indexed_address_bits(char *tokens[], uint32_t *bin_code) {
     char *reg_str = tokens[2];
     char *expr_str = tokens[3];
 
-    printf("expression str: %s\n", expr_str);
-
     uint16_t reg_val = get_base_reg_indexed(reg_str);
     int32_t offset = 0;
 
     // If expression is not empty
     if (expr_str != NULL) {
         offset = get_numeric_offset(expr_str);
-        printf("returned offset: %d\n", offset);
     }
 
     if (offset < 0) {
         *bin_code &= ~(0x1 << 23); // if negative offset, U (bit 23) should be off
         offset = -offset;
     }
-
-    printf("reg value = %d\n", reg_val);
-    printf("OFFSET value = 0x%x\n", offset);
 
     *bin_code |= (uint32_t) offset;        // set offset at 11-0
     *bin_code |= reg_val << 16; // set Rn at 19-16

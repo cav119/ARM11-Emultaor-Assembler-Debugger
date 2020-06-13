@@ -17,8 +17,14 @@
 // Returns the masked bits (reused from emulator)
 uint32_t process_mask(uint32_t n, uint8_t start_pos, uint8_t end_pos);
 
+// Sets the bit at the given position
+uint32_t set_bit(uint32_t n, int pos);
+
 // Prints a 32 bit number as a binary string
 void print_bits(uint32_t num);
+
+// Reads the register number from a string
+int read_reg_num(char *reg);
 
 // Checks pointer, exits if it is NULL
 void check_pointer(void *ptr, char *error_msg);

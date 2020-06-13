@@ -16,16 +16,15 @@
 #define AL_CODE (14)
 #define UI32 (sizeof(uint32_t))
 
-// comprator function for hash, required by dict_create
-static int compare_str(const void *s1, const void *s2){
+// comparator function for hash, required by dict_create
+static int compare_str(const void *s1, const void *s2) {
     char *str1 = (char *) s1;
     char *str2 = (char *) s2;
     return strcmp(str1, str2) == 0;
 }
 
 
-
-static HashTable *init_rule_hash(){
+static HashTable *init_rule_hash() {
     HashTable *hash_table = ht_create(compare_str);
     // Inserts the suffixes and corresponding codes
     // for the branch instruction
@@ -62,17 +61,19 @@ static HashTable *init_rule_hash(){
     return hash_table;
 }
 
+
 // creates a new WaitingLabel with given values
-static WaitingLabel *alloc_wait_label(char *name){
+static WaitingLabel *alloc_wait_label(char *name) {
     WaitingLabel *label = calloc(1, sizeof(WaitingLabel));
     label->name = name; 
     label->solved = false;
     return label;
 }
 
-AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
-                , ArrayList *waiting_branches, bool *label_next_instr,
-                              ArrayList *waiting_labels, long *instr_line){ 
+AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table,
+                    ArrayList *waiting_branches, bool *label_next_instr,
+                    ArrayList *waiting_labels, long *instr_line) { 
+
     HashTable *codes_maps = init_rule_hash();
     if (code[1] == NULL){
         // must be a label, not a jump
@@ -98,7 +99,7 @@ AsmInstruction *encode_branch_instr(char **code, HashTable *symbol_table
         // get the condition
         uint32_t int_code;
         if (code[0][1] != '\0') {
-            char cond[2] = {code[0][1], code[0][2], '\0'};
+            char cond[3] = {code[0][1], code[0][2], '\0'};
 
             int_code = *((int *) ht_get(codes_maps, cond, sizeof(char) * 2));
         }

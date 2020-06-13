@@ -4,13 +4,17 @@
 #include "asm_single_data_transfer_instr.h"
 #include "asm_data_proc_instr.h"
 #include "array_list.h"
-#include "file_io.h"
 
 #include <assert.h>
 
 #define MAX_WAITING_BRANCHES (50)
 #define LINE_SIZE (512)
 #define MAX_TOKENS (5)
+
+// between the current execution of an instruction and reaching another one we need
+// to subtract 8 to take into account the pipeline execution
+#define PC_PIPE_LAG (8)
+
 
 char **instr_to_tokens(char array[]) {
     char **words = calloc(MAX_TOKENS, LINE_SIZE * sizeof(char));
@@ -24,13 +28,24 @@ char **instr_to_tokens(char array[]) {
     return words;
 }
 
+// Writes bytes in little endian to the given file
+static void write_bytes(FILE *ouput_file, uint32_t bin_code) {
+    char bytes[] = {
+        process_mask(bin_code, 0, 7),
+        process_mask(bin_code, 8, 15),
+        process_mask(bin_code, 16, 23),
+        process_mask(bin_code, 24, 31),
+    };
+
+    fwrite(bytes, 1, 4, ouput_file);
+}
+
 // Writes the binary to the output file for all the encoded instructions
 static void generate_binary_code(List *instructions, FILE *outf) {
     ListNode *curr_instr = instructions->head;
     while (curr_instr != NULL) {
         AsmInstruction *instr = curr_instr->elem;
         write_bytes(outf, *(instr->code));
-        printf("0x%x\n", *(instr->code));
         curr_instr = curr_instr->next;
     }
 }
@@ -47,10 +62,11 @@ static int str_comp(const void *arg1, const void *arg2) {
 
 }
 
+
 static void put_instr_to_label(bool *label_next_instr, long curr_number, HashTable *symbol_table,
     ArrayList *labels) {
 
-    if (! (*label_next_instr) ) {
+    if (!(*label_next_instr)) {
         return;
     }
     *label_next_instr = false;
@@ -72,9 +88,6 @@ static void free_waiting_branch(WaitingBranchInstr *waiting) {
     free(waiting);
 }
 
-// between the current execution of an instruction and reaching another one we need
-// to subtract 8 to take into account the pipeline execution
-#define PC_PIPE_LAG (8)
 
 static void add_offset_to_branch(uint32_t *inst, long branch_line, long target_line) {
     int32_t offset = target_line - branch_line - PC_PIPE_LAG;
@@ -87,6 +100,7 @@ static void add_offset_to_branch(uint32_t *inst, long branch_line, long target_l
     *inst |= offset;
 
 }
+
 
 static void add_labels_to_waiting_inst(HashTable *symbol_table, ArrayList *waiting_branches) {
     for (int i = 0; i < waiting_branches->size; i++) {
@@ -102,7 +116,6 @@ static void add_labels_to_waiting_inst(HashTable *symbol_table, ArrayList *waiti
             // found label 
             add_offset_to_branch(br_inst->instruction, br_inst->instr_line, *label_line);
             br_inst->solved = true;
-            printf("Found missing label %s which points to instruction 0x%.8x\n", key, *label_line);
         }
     }
 
@@ -133,9 +146,7 @@ void decode_instruction(const char *instr[], long *instr_number,
     }
     // branch instrucntion or label
     else if (instr[0][0] == 'b' || instr[1] == NULL) {
-
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
-        bool succeeded = false;
         AsmInstruction *branch = encode_branch_instr(instr, symbol_table, waiting_branches ,
                 label_next_instr, waiting_labels, instr_number);
       
@@ -167,22 +178,9 @@ void decode_instruction(const char *instr[], long *instr_number,
 
 }
 
-
-// compares two WaitingBrachInstr by the label name
-static int cmp_waiting_branches(const void *arg1, const void *arg2) {
-    if (arg1 == NULL || arg2 == NULL) {
-        return 0;
-    }
-    WaitingBranchInstr *l1 = (WaitingBranchInstr *) arg1;
-    WaitingBranchInstr *l2 = (WaitingBranchInstr *) arg2;
-
-    return strcmp(l1->name, l2->name) == 0;
-}
-
 static void free_tokens(char **tokens) {
     for (int i = 0; i < MAX_TOKENS; i++) {
         // frees every word since all of them get allocated
-        //printf("Just freed : %s\n", tokens[i]);
         free(tokens[i]);
     }
     free(tokens);
@@ -236,8 +234,8 @@ static void calculate_pending_offsets(List *instructions, List *dumped_bytes,
     }
 }
 
-// One-pass assembler function (called from main)
-void encode_file_lines(FILE* inp_file, FILE* out_file) {
+
+void one_pass_assemble(FILE* inp_file, FILE* out_file) {
 
     ArrayList *waiting_labels = arrlist_init();
     ArrayList *waiting_branches = arrlist_init();
@@ -283,8 +281,7 @@ void encode_file_lines(FILE* inp_file, FILE* out_file) {
     // this free suffices since the HT only has char *keys, and long *values
     // so there is no need for a more advanced free function
     ht_free(symbol_table);
+
     list_destroy(instructions, free_asm_instr);
-    // list_destroy(dumped_bytes, free);
-    // list_destroy(pending_offset_instr_addrs, free);
 }
 

@@ -3,15 +3,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-/* DISCLAIMER!
-// If you add an element to the list, 
-// on list_destroy it WILL be freed!
-// so do not count on it existing afterwards!
-// Use duplicates
-*/
 
 // Free function for an element of the list
-typedef void (*free_f)(void *);
+typedef void (*free_f) (void *);
+
 // A linked list node
 typedef struct list_node {
     void *elem;
@@ -25,7 +20,6 @@ typedef struct list {
     ListNode *tail;
     int size;
 } List;
-
 
 
 // returns an empty heap-allocated list, with NULL values
