@@ -65,6 +65,8 @@ void update_registers(RegistersWin *regs_win, uint32_t *registers);
 
 /*********** Memory window functions ***********/
 
+// Updates the memory window by jumping to the given address (no need to refresh)
+void update_memory_map(MemoryWin *mem_win, uint8_t *memory, uint32_t address);
 
 
 /*********** Output window functions ***********/
@@ -76,6 +78,8 @@ void print_to_output(OutputWin *out_win, char *text);
 /*********** Input window functions ***********/
 
 // Gets a single string from input (returned on enter press, ie: \n)
+// void get_user_input(InputWin *inp_win, char key_char);
 void get_user_input(InputWin *inp_win);
+
 
 #endif

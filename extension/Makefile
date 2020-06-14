@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -pedantic -std=c99 -g
-LDFLAGS = -lcurses
+LDFLAGS = -lcurses -lpthread
 
 SOURCE_FILES = gui.c
 

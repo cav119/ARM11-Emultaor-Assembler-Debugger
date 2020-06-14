@@ -46,12 +46,33 @@ int main(int argc, char **argv) {
 
     // MAIN EVENT LOOP
     while (1) {
-        // this is a blocking operation, so we may need different threads
-        // to look for: user input, arrow keys for command history
+        // noecho();
+        // int choice = wgetch(main_win->inp_win->win);
+        // bool key_pressed = false;
+        // switch (choice) {
+        //     case KEY_UP:
+        //         navigate_cmd_history(main_win->inp_win, true);
+        //         key_pressed = true;
+        //         continue;
+        //     case KEY_DOWN:
+        //         navigate_cmd_history(main_win->inp_win, false);
+        //         key_pressed = true;
+        //         continue;
+        //     default:
+        //         break;
+        // }
+
+        // // move cursor to end of string if a key was pressed
+        // if (key_pressed) {
+        //     wmove(main_win->inp_win->win, 1, 1 + strlen(main_win->inp_win->input_str));
+        // }
+
+        // // if a non array key was pressed, ensure that the char is appended to front
+        // echo();
+        // get_user_input(main_win->inp_win, (char) choice); 
+
         get_user_input(main_win->inp_win); 
-        
-        parse_command(main_win->inp_win->input_str, main_win->out_win, 
-            main_win->regs_win, registers);
+        parse_command(main_win->inp_win->input_str, main_win, registers, memory);
 
         // move the cursor back to the input window
         wmove(main_win->inp_win->win, 1, 1 + PROMPT_SIZE);
@@ -62,24 +83,48 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
+void navigate_cmd_history(InputWin *inp_win, bool up) {
+    wclear(inp_win->win);
+    box(inp_win->win, 0, 0);
+    char *command;
+    if (up) {
+        command = "this";
+    } else {
+        command = "that";
+    }
+    mvwprintw(inp_win->win, 1, 1, "%s%s", inp_win->prompt_str, command);
+    strcpy(inp_win->input_str, command);
+    wrefresh(inp_win->win);
+}
 
 // Parses commands and executes them where possible
-void parse_command(char *command, OutputWin *out_win, RegistersWin *regs_win, uint32_t *registers) {
+void parse_command(char *command, MainWin *main_win, uint32_t *registers, uint8_t *memory) {
     // do any extra formatting, ie: ignore spaces
+    static int times = 1;
 
+    srand(time(NULL));
+
+    // Check single word commands
     if (strcasecmp(command, RUN_CMD_S) == 0 || strcasecmp(command, RUN_CMD_L) == 0) {
         // do something...
-        print_to_output(out_win, "Started program execution");
+        print_to_output(main_win->out_win, "Started program execution");
 
     } else if (strcasecmp(command, NEXT_CMD_S) == 0 || strcasecmp(command, NEXT_CMD_L) == 0) {
-        print_to_output(out_win, "Moved to next instruction");
+        print_to_output(main_win->out_win, "Moved to next instruction");
 
     } else if (strcasecmp(command, "reg") == 0) {
         for (int i = 0; i < 17; i++) {
             registers[i] = rand() % 0xFFFFFFFF;
         }
         registers[0] = 0xFFFFFFFF;
-        update_registers(regs_win, registers);
-        wrefresh(regs_win->win);
+        update_registers(main_win->regs_win, registers);
+        wrefresh(main_win->regs_win->win);
+
+    } else if (strcasecmp(command, "mem") == 0) {
+        uint32_t address = 2;
+        update_memory_map(main_win->memory_win, memory, address);
+        
+    } else {
+        print_to_output(main_win->out_win, command);
     }
 }

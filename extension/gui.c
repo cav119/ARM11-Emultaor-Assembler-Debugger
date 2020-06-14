@@ -4,10 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define REGS_WIN_HEIGHT 10
+#define MIDDLE_WINS_HEIGHT 14
+#define INPUT_WIN_HEIGHT 3
 
 static RegistersWin *init_regs_win(uint32_t *regs, int width) {
     RegistersWin *regs_win = malloc(sizeof(RegistersWin));
-    regs_win->win = newwin(10, width - 2, 0, 1);
+    regs_win->win = newwin(REGS_WIN_HEIGHT, width - 2, 0, 1);
     box(regs_win->win, 0, 0);
     update_registers(regs_win, regs);
 
@@ -16,12 +19,12 @@ static RegistersWin *init_regs_win(uint32_t *regs, int width) {
 
 static MemoryWin *init_memory_win(uint8_t *memory, int width, int regs_win_height) {
     MemoryWin *memory_win = malloc(sizeof(MemoryWin));
-    memory_win->win = newwin(14, 2 * width / 3 - 1, regs_win_height + 1, 1);
-    scrollok(memory_win->win, true);
-    for (int i = 0; i < 100; i++) {
-        mvwprintw(memory_win->win, 1 + i, 1, "%d - some random line", i);
-    }
+    memory_win->win = newwin(MIDDLE_WINS_HEIGHT, 2 * width / 3 - 1, regs_win_height + 1, 1);
     box(memory_win->win, 0, 0);
+
+    for (int i = 0; i < MIDDLE_WINS_HEIGHT - 2; i++) {
+        mvwprintw(memory_win->win, i + 1, 1, "   M[0x%.8x] = 0x%.2x ", i, 0);
+    }
 
     return memory_win;
 }
@@ -29,7 +32,7 @@ static MemoryWin *init_memory_win(uint8_t *memory, int width, int regs_win_heigh
 static HelpWin *init_help_win(int width, int regs_win_height) {
     HelpWin *hw = malloc(sizeof(HelpWin));
 
-    WINDOW *help_win = newwin(14, width / 3, regs_win_height + 1, 2 * width / 3);
+    WINDOW *help_win = newwin(MIDDLE_WINS_HEIGHT, width / 3, regs_win_height + 1, 2 * width / 3);
     wattron(help_win, A_BOLD);
     mvwprintw(help_win, 1, help_win->_maxx / 2 - strlen("--- COMMANDS ---") / 2, "--- COMMANDS ---");
     wattroff(help_win, A_BOLD);
@@ -48,18 +51,18 @@ static HelpWin *init_help_win(int width, int regs_win_height) {
     return hw;
 }
 
-static OutputWin *init_out_win(int width, int height) {
+static OutputWin *init_out_win(int width, int height, int mem_win_height) {
     OutputWin *out_win = malloc(sizeof(OutputWin));
-    out_win->win = newwin(14, width - 2, height - 17, 1);  // need to change height/start_y of this using memory max y
+    out_win->win = newwin(height - mem_win_height - 5, width - 2, mem_win_height + 2, 1);
     mvwprintw(out_win->win, 1, 1, "Output of commands goes here...");
     box(out_win->win, 0, 0);
 
     return out_win;
 }
 
-static InputWin *init_inp_win(int width, int height) {
+static InputWin *init_inp_win(int width, int out_win_height) {
     InputWin *inp_win = malloc(sizeof(InputWin));
-    inp_win->win = newwin(3, width - 2, height - 3, 1);
+    inp_win->win = newwin(INPUT_WIN_HEIGHT, width - 2, out_win_height + 3, 1);
     box(inp_win->win, 0, 0);   // set border
 
     strcpy(inp_win->prompt_str, PROMPT_TXT);
@@ -67,7 +70,7 @@ static InputWin *init_inp_win(int width, int height) {
     inp_win->input_str = calloc(inp_win->input_str_len, sizeof(char));
 
     mvwprintw(inp_win->win, 1, 1, "%s", inp_win->prompt_str);
-    // keypad(inp_win->win, true);    
+    keypad(inp_win->win, true);    
 
     return inp_win;
 }
@@ -76,6 +79,7 @@ static InputWin *init_inp_win(int width, int height) {
 MainWin *init_main_win(uint32_t *regs, uint8_t *memory) {
     initscr();
     cbreak();
+    scrollok(stdscr, false);
 
     int width = getmaxx(stdscr);
     int height = getmaxy(stdscr);
@@ -84,8 +88,8 @@ MainWin *init_main_win(uint32_t *regs, uint8_t *memory) {
     win->regs_win = init_regs_win(regs, width);
     win->memory_win = init_memory_win(memory, width, win->regs_win->win->_maxy);
     win->help_win = init_help_win(width, win->regs_win->win->_maxy);
-    win->out_win = init_out_win(width, height);
-    win->inp_win = init_inp_win(width, height);
+    win->out_win = init_out_win(width, height, win->memory_win->win->_maxy + win->regs_win->win->_maxy);
+    win->inp_win = init_inp_win(width, win->out_win->win->_maxy + win->memory_win->win->_maxy + win->regs_win->win->_maxy);
 
     return win;
 }
@@ -141,6 +145,36 @@ void update_registers(RegistersWin *regs_win, uint32_t *registers) {
 
 /************ MEMORY WINDOW FUNCTIONS ************/
 
+// maybe be draw little endian table like in a hex editor?
+void update_memory_map(MemoryWin *mem_win, uint8_t *memory, uint32_t address) {
+    int midpoint = (MIDDLE_WINS_HEIGHT - 2) / 2;
+    // replace for total memory size
+
+    // Check edge cases
+    int start, stop;
+    if (((int32_t) address) - midpoint + 1 < 0) {
+        start = 0;
+        stop = MIDDLE_WINS_HEIGHT - 2;
+    } else if (((int32_t) address) + midpoint + 1 > 1000) {
+        start = 1000 - (MIDDLE_WINS_HEIGHT - 2);
+        stop = 1000;
+    }
+    else {
+        start = address - midpoint + 1;
+        stop = address + midpoint + 1;
+    }
+
+    for (int i = start; i < stop; i++) {
+        if (address == i) {
+            wattron(mem_win->win, A_REVERSE);
+            mvwprintw(mem_win->win, i + 1 - start, 1, "-> M[0x%.8x] = 0x%.2x ", i, memory[i]);
+            wattroff(mem_win->win, A_REVERSE);
+        } else {
+            mvwprintw(mem_win->win, i + 1 - start, 1, "   M[0x%.8x] = 0x%.2x ", i, memory[i]);
+        }
+    }
+    wrefresh(mem_win->win);
+}
 
 
 /************ OUPUT WINDOW FUNCTIONS ************/
@@ -155,12 +189,32 @@ void print_to_output(OutputWin *out_win, char *text) {
 
 /************ INPUT WINDOW FUNCTIONS ************/
 
+// void get_user_input(InputWin *inp_win, char key_char) {
+//     mvwprintw(inp_win->win, 1, 1, "%s%c", inp_win->prompt_str, key_char);
+
+//     wgetnstr(inp_win->win, inp_win->input_str, inp_win->input_str_len - PROMPT_SIZE - 2);
+//     char temp_buffer[inp_win->input_str_len - PROMPT_SIZE - 1];
+//     sprintf(temp_buffer, "%c%s", key_char, inp_win->input_str);
+
+//     memcpy(inp_win->input_str, temp_buffer, sizeof(temp_buffer));
+
+//     wclear(inp_win->win);
+//     box(inp_win->win, 0, 0);
+//     mvwprintw(inp_win->win, 1, 1, "%s", inp_win->prompt_str);
+//     wrefresh(inp_win->win);
+// }
+
+
+// with no cmd history navigation
 void get_user_input(InputWin *inp_win) {
-    // store the string in the input_str array
     wgetnstr(inp_win->win, inp_win->input_str, inp_win->input_str_len - PROMPT_SIZE - 1);
     wclear(inp_win->win);
     box(inp_win->win, 0, 0);
     mvwprintw(inp_win->win, 1, 1, "%s", inp_win->prompt_str);
     wrefresh(inp_win->win);
 }
+
+
+
+// up arrow
 
