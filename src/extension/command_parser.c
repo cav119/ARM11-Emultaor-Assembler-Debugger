@@ -11,6 +11,20 @@ static bool same_str(char *str1, char *str2){
     return strcmp(str1, str2) == 0;
 }
 
+int *compare_breakpoint(BreakCommand *b1, BreakCommand *b2){
+    int *compare = calloc(1, sizeof(int *));
+    if (!b1 || !b2 || !b1->break_num || !b2->break_num || !b1->target || !b2->target){
+        compare = NULL;
+    } else if (b1->target > b2->target){
+        *compare = 1;
+    } else if (b1->target < b2->target){
+        *compare = -1;
+    } else {
+        *compare = 0;
+    }
+    return compare;
+}
+
 static char* clone_str(char *str){
     if (str == NULL){
         return NULL;
@@ -24,7 +38,8 @@ static char* clone_str(char *str){
     return clone;
 }
 
-static char** tokenize_instr(char *instr, int args){
+static char **tokenize_instr(char *instr, int args){
+
     char **tokens = calloc(args, sizeof(char) * MAX_COMMAND_LEN);
     int curr = 0;
     char *tok = strtok(instr, " ");
@@ -107,6 +122,9 @@ static PrintCommand *tokens_to_print_comm(char **tokens){
 }
 
 static ExecutableCommand *parse(char *input,  List *list){
+    printf("instr = %s \n", input);
+    char *copy = calloc(sizeof(char),  MAX_COMMAND_LEN);
+    strcpy(copy, input);
     ExecutableCommand *comm = calloc(1, sizeof(ExecutableCommand));
     // could be handled more nicely with a hashtable
     // but there's no reason to allocate so much memory just for 4 command types
@@ -122,34 +140,44 @@ static ExecutableCommand *parse(char *input,  List *list){
     else if (same_str(input, EXIT_CMD_S) || same_str(input, EXIT_CMD_L)){
         comm->type = EXIT_CMD;
     }
-    else if (same_str(strtok(input, " "), BREAK_CMD_S) || same_str(strtok(input, " "), BREAK_CMD_L)) {
+    else if (same_str(strtok(copy, " "), BREAK_CMD_S) || same_str(strtok(copy, " "), BREAK_CMD_L)) {
+        free(copy);
         comm->type = BREAK_CMD;
         char **tokens = tokenize_instr(input, 2);
         if(list == NULL){
             //invalid list
+            perror("null list");
             free(comm);
             return NULL;
         }
         if(tokens == NULL){
             //invalid break
+            perror("null tokens");
             free(comm);
             return NULL;
         }
         BreakCommand *break_cmd = calloc(1, sizeof(BreakCommand));
         if(!tokens[0] || !tokens[1]){
             //not 2 tokens
+            perror("one of the tokens are null");
+            free(comm);
+            free(break_cmd);
             return NULL;
         }
         if(!same_str(tokens[0], BREAK_CMD_S) && !same_str(tokens[0], BREAK_CMD_L)){
-            //not break or b 
+            //not break or b
+            perror("the command is not a breakpoint command");
+            free(comm);
+            free(break_cmd);
             return NULL;
         }
-        list.size ++;
+        list->size++;
         break_cmd->break_num = list->size;
         break_cmd->target = atoi(tokens[1]);
         List_Elem *elem = create_elem();
         elem->command = break_cmd;
         add_elem_front(list, elem);
+        print_list(list);
     }
     else {
         // print command
@@ -169,7 +197,7 @@ static ExecutableCommand *parse(char *input,  List *list){
             free(comm);
             return NULL;
         }
-        comm->command.prinList *t = print;
+        comm->command.print = print;
     }
     return comm;    
 }
@@ -211,6 +239,7 @@ static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
 
 static void print_help_comm(void){
     puts("Use 'n' or 'next' to go to the next command");
+    puts("please type <b> <MEMORY_LOCATION> to add a breakpoint");
     puts("Or print <FORMAT> <LOCATION><NUMBER> to print the state");
     printf("Where the format can be 'BIN' or 'HEX' or 'DEC', location can");
     puts(" be 'R' for registers, 'M' for memory and the number must be a positive integer");
@@ -229,8 +258,11 @@ static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
             puts("Stepping to next command");
             break;
         case EXIT_CMD:
-            puts("Exitting the program");
+            puts("Exiting the program");
             return true;
+        case BREAK_CMD:
+            puts("adding breakpoint");
+            break;
         case PRINT_CMD:
             execute_print_comm(comm->command.print, cpu_state); 
             break; 

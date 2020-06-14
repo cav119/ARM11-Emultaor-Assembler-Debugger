@@ -5,8 +5,7 @@
 #include "utilities.h"
 #include "pipeline_executor.h"
 #include "pipeline_data.h"
-#include "../extension/command_parser.h"
-#include "../extension/break_list.h"
+
 
 
 // If running the extension, output this message to stdout
@@ -16,20 +15,20 @@
 Pipe *init_pipeline(CpuState *cpu_state) {
     Pipe *pipe = calloc(1, sizeof(Pipe));
     pipe->fetching = fetch(0, cpu_state);
-    increment_pc(cpu_stinit_pipelineate);
+    increment_pc(cpu_state);
 
     return pipe;
 }
 
 
 uint32_t fetch(uint32_t ptr, CpuState *cpu_state) {
-    bool valid = checkinit_pipeline_valid_memory_access(cpu_state, ptr);
+    bool valid = check_valid_memory_access(cpu_state, ptr);
     if (!valid) {
         return 0;
     }
 
     return index_little_endian_bytes(&(cpu_state->memory[ptr]));
-}init_pipeline
+}
 
 uint32_t fetch_big_endian(uint32_t ptr, CpuState *cpu_state) {
     bool valid = check_valid_memory_access(cpu_state, ptr);
@@ -60,7 +59,7 @@ bool is_multiply_instr(uint32_t bits) {
 
 bool is_single_data_transfer_instr(uint32_t bits) {
     // bits 27-26 are 01init_pipeline
-    return process_mainit_pipelinesk(bits, 26, 27) == 1;
+    return process_mask(bits, 26, 27) == 1;
 }
 
 
@@ -119,15 +118,15 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         pipe->executing = pipe->decoding;
         pipe->decoding = decode_instruction(pipe->fetching);
         if(is_extension){
-            BreakCommand *break_point = contains_breakpoint(cpu_state->registers[PC], list);
+            BreakCommand *break_point = contains_breakpoint(cpu_state->registers[PC] - 8, list);
             if(break_point != NULL){
-                printf("reached breakpoint %d at address %d",breakpoint->break_num,cpu_state->registers[PC]);
+                printf("reached breakpoint %d at address %d",break_point->break_num,cpu_state->registers[PC]);
+                is_stepping = true;
             }
-            is_stepping = true;
         }
 
         bool branch_instr_succeeded = false;
-        if (is_extension && is_stepping && get_input_and_execute(cpu_state) && ){
+        if (is_extension && is_stepping && get_input_and_execute(cpu_state, list)){
             // must have hit the exit command
             // need to free pipe before aborting
             if (pipe->executing){
@@ -167,17 +166,17 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
 
 
 void start_pipeline(CpuState *cpu_state, bool is_extension) {
-    bool is_stepping = false;
+    HashTable  *hash_table = ht_create(compare_breakpoint);
     if(is_extension){
         EXTENSION_WRITE(is_extension, "please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
-        List *list = create_list();
-        get_input_and_execute(cpu_state);
+        get_input_and_execute(cpu_state, list);
+        get_input_and_execute(cpu_state, list);
     }
-    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, is_stepping, list);
+    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, false, list);
 }
 
 
-bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool is_stepping, List *list) {
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool is_stepping, HashTable *hash_table) {
     // Must have fetched a halt
     // since it stops when fetching a halt the block of code simulates executing 2 cycles
     // first executing pipe->executing, and then pipe->decoding

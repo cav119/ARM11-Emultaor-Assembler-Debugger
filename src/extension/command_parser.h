@@ -15,4 +15,6 @@
 // hit the exit command that halts the "debugger"
 bool get_input_and_execute(CpuState *cpu_state, List *list);
 
+int *compare_breakpoint(BreakCommand *b1, BreakCommand *b2);
+
 #endif
