@@ -1,8 +1,8 @@
 CC = gcc
-CFLAGS = -Wall -pedantic -std=c99
+CFLAGS = -Wall -pedantic -std=c99 -g
 LDFLAGS = -lcurses
 
-SOURCE_FILES = 
+SOURCE_FILES = gui.c
 
 .PHONY = clean
 
