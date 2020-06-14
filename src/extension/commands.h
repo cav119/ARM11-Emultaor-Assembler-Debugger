@@ -36,11 +36,18 @@ typedef struct print_cmd {
    uint32_t print_target; 
 } PrintCommand;
 
+typedef struct break_cmd {
+   uint32_t break_num;
+   uint32_t target;
+} BreakCommand;
+
 typedef struct{
     CommandsEnum type;
     union {
         PrintCommand *print;
+        BreakCommand *break_cmd;
      } command;
+
 } ExecutableCommand;
 
 #endif

@@ -24,8 +24,8 @@ static char* clone_str(char *str){
     return clone;
 }
 
-static char** tokenize_print_instr(char *instr){
-    char **tokens = calloc(3, sizeof(char) * MAX_COMMAND_LEN);
+static char** tokenize_instr(char *instr, int args){
+    char **tokens = calloc(args, sizeof(char) * MAX_COMMAND_LEN);
     int curr = 0;
     char *tok = strtok(instr, " ");
     while (tok){
@@ -33,7 +33,7 @@ static char** tokenize_print_instr(char *instr){
         curr++;
         tok = strtok(NULL, " ");
     }
-    if (curr != 3){
+    if (curr != args){
         for (int i = 0; i < curr; i++){
             free(tokens[i]);
         }
@@ -106,7 +106,7 @@ static PrintCommand *tokens_to_print_comm(char **tokens){
 
 }
 
-static ExecutableCommand *parse(char *input){
+static ExecutableCommand *parse(char *input,  List *list){
     ExecutableCommand *comm = calloc(1, sizeof(ExecutableCommand));
     // could be handled more nicely with a hashtable
     // but there's no reason to allocate so much memory just for 4 command types
@@ -119,16 +119,42 @@ static ExecutableCommand *parse(char *input){
     else if (same_str(input, NEXT_CMD_L) || same_str(input, NEXT_CMD_S)){
         comm->type = NEXT_CMD;
     }
-    else if (same_str(input, BREAK_CMD_S) || same_str(input, BREAK_CMD_L)) {
-        comm->type = BREAK_CMD;
-    }
     else if (same_str(input, EXIT_CMD_S) || same_str(input, EXIT_CMD_L)){
         comm->type = EXIT_CMD;
+    }
+    else if (same_str(strtok(input, " "), BREAK_CMD_S) || same_str(strtok(input, " "), BREAK_CMD_L)) {
+        comm->type = BREAK_CMD;
+        char **tokens = tokenize_instr(input, 2);
+        if(list == NULL){
+            //invalid list
+            free(comm);
+            return NULL;
+        }
+        if(tokens == NULL){
+            //invalid break
+            free(comm);
+            return NULL;
+        }
+        BreakCommand *break_cmd = calloc(1, sizeof(BreakCommand));
+        if(!tokens[0] || !tokens[1]){
+            //not 2 tokens
+            return NULL;
+        }
+        if(!same_str(tokens[0], BREAK_CMD_S) && !same_str(tokens[0], BREAK_CMD_L)){
+            //not break or b 
+            return NULL;
+        }
+        list.size ++;
+        break_cmd->break_num = list->size;
+        break_cmd->target = atoi(tokens[1]);
+        List_Elem *elem = create_elem();
+        elem->command = break_cmd;
+        add_elem_front(list, elem);
     }
     else {
         // print command
         comm->type = PRINT_CMD;
-        char **tokens = tokenize_print_instr(input);
+        char **tokens = tokenize_instr(input, 3);
         if (tokens == NULL){
             // invalid instruction
             free(comm);
@@ -143,7 +169,7 @@ static ExecutableCommand *parse(char *input){
             free(comm);
             return NULL;
         }
-        comm->command.print = print;
+        comm->command.prinList *t = print;
     }
     return comm;    
 }
@@ -213,17 +239,17 @@ static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
 }
 
 
-bool get_input_and_execute(CpuState *cpu_state){
+bool get_input_and_execute(CpuState *cpu_state, List *list){
     char input[MAX_COMMAND_LEN];
     printf(PROMPT_TXT);
     fgets(input, MAX_COMMAND_LEN, stdin);
 
     // gets rid of the trailing \n
     input[strlen(input)- 1] = '\0';
-    ExecutableCommand *comm = parse(input);
+    ExecutableCommand *comm = parse(input, list);
     if (comm == NULL){
         puts("You gave me a wrong command. Type 'help' if you don't know the commands'");
-        return get_input_and_execute(cpu_state);
+        return get_input_and_execute(cpu_state, list);
     }
     bool ending = execute_command(comm, cpu_state);
     if (!ending && comm->type != NEXT_CMD && comm->type != RUN_CMD) {
@@ -231,7 +257,7 @@ bool get_input_and_execute(CpuState *cpu_state){
             free(comm->command.print);
         }
         free(comm);
-        return get_input_and_execute(cpu_state);
+        return get_input_and_execute(cpu_state, list);
     }
     if (ending){
         free(comm);

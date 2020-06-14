@@ -6,6 +6,7 @@
 #include "pipeline_executor.h"
 #include "pipeline_data.h"
 #include "../extension/command_parser.h"
+#include "../extension/break_list.h"
 
 
 // If running the extension, output this message to stdout
@@ -15,20 +16,20 @@
 Pipe *init_pipeline(CpuState *cpu_state) {
     Pipe *pipe = calloc(1, sizeof(Pipe));
     pipe->fetching = fetch(0, cpu_state);
-    increment_pc(cpu_state);
+    increment_pc(cpu_stinit_pipelineate);
 
     return pipe;
 }
 
 
 uint32_t fetch(uint32_t ptr, CpuState *cpu_state) {
-    bool valid = check_valid_memory_access(cpu_state, ptr);
+    bool valid = checkinit_pipeline_valid_memory_access(cpu_state, ptr);
     if (!valid) {
         return 0;
     }
 
     return index_little_endian_bytes(&(cpu_state->memory[ptr]));
-}
+}init_pipeline
 
 uint32_t fetch_big_endian(uint32_t ptr, CpuState *cpu_state) {
     bool valid = check_valid_memory_access(cpu_state, ptr);
@@ -58,8 +59,8 @@ bool is_multiply_instr(uint32_t bits) {
 
 
 bool is_single_data_transfer_instr(uint32_t bits) {
-    // bits 27-26 are 01
-    return process_mask(bits, 26, 27) == 1;
+    // bits 27-26 are 01init_pipeline
+    return process_mainit_pipelinesk(bits, 26, 27) == 1;
 }
 
 
@@ -113,13 +114,20 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
 
 // Internal helper recursive function for the pipeline execution, makes the code
 // cleaner and as efficient using gcc's tail call optimisation
-static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension) {
+static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension, bool is_stepping, List *list) {
     if (pipe->fetching) {
         pipe->executing = pipe->decoding;
         pipe->decoding = decode_instruction(pipe->fetching);
+        if(is_extension){
+            BreakCommand *break_point = contains_breakpoint(cpu_state->registers[PC], list);
+            if(break_point != NULL){
+                printf("reached breakpoint %d at address %d",breakpoint->break_num,cpu_state->registers[PC]);
+            }
+            is_stepping = true;
+        }
 
         bool branch_instr_succeeded = false;
-        if (is_extension && get_input_and_execute(cpu_state)){
+        if (is_extension && is_stepping && get_input_and_execute(cpu_state) && ){
             // must have hit the exit command
             // need to free pipe before aborting
             if (pipe->executing){
@@ -148,22 +156,28 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
             increment_pc(cpu_state);
         }
         // Ask user for input
-        start_pipeline_helper(cpu_state, pipe, is_extension);
+        start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, list);
     } else {
-        bool ended = end_pipeline(pipe, cpu_state, is_extension);
+        bool ended = end_pipeline(pipe, cpu_state, is_extension, is_stepping, list);
         if (!ended) {
-            start_pipeline_helper(cpu_state, pipe, is_extension);
+            start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, list);
         }
     }
 }
 
 
 void start_pipeline(CpuState *cpu_state, bool is_extension) {
-    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension);
+    bool is_stepping = false;
+    if(is_extension){
+        EXTENSION_WRITE(is_extension, "please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
+        List *list = create_list();
+        get_input_and_execute(cpu_state);
+    }
+    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, is_stepping, list);
 }
 
 
-bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension) {
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool is_stepping, List *list) {
     // Must have fetched a halt
     // since it stops when fetching a halt the block of code simulates executing 2 cycles
     // first executing pipe->executing, and then pipe->decoding

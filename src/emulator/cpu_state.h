@@ -51,7 +51,7 @@ void print_nonzero_little_endian_memory(CpuState *cpu_state, size_t bytes);
 // cpu has memory of size "bytes"
 void print_nonzero_big_endian_memory(CpuState *cpu_state, size_t bytes);
 
-// Make PC go go to instruction with offset
+// Make PC go go to iipe->decoding)nstruction with offset
 uint32_t *offset_pc(int32_t offset, CpuState *cpu_state);
 
 // Increments PC to next instruction (adding 4 bytes)
