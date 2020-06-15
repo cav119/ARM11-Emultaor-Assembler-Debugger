@@ -36,7 +36,8 @@ int main(int argc, char **argv) {
     }
     uint8_t *memory = calloc(1000, sizeof(uint8_t));
     for (int i = 0; i < 1000; i++) {
-        memory[i] = rand() % 0xFF;
+        // memory[i] = rand() % 0xFF;
+        memory[i] = i;
     }
 
     // Pass in the CPuState struct instead
@@ -79,6 +80,9 @@ void parse_command(char *command, MainWin *main_win, uint32_t *registers, uint8_
     // do any extra formatting, ie: ignore spaces
     srand(time(NULL));
 
+    char *first = strtok(command, " ");
+    char *snd = strtok(NULL, " ");
+
     // Check single word commands
     if (strcasecmp(command, RUN_CMD_S) == 0 || strcasecmp(command, RUN_CMD_L) == 0) {
         // do something...
@@ -95,9 +99,12 @@ void parse_command(char *command, MainWin *main_win, uint32_t *registers, uint8_
         update_registers(main_win->regs_win, registers);
         wrefresh(main_win->regs_win->win);
 
-    } else if (strcasecmp(command, "mem") == 0) {
-        uint32_t address = rand() % 1000;
-        update_memory_map(main_win->memory_win, memory, address);
+    } else if (strcasecmp(first, "mem") == 0) {
+        if (!snd) {
+            print_to_output(main_win->out_win, "Please specify a memory address");
+        }
+        uint32_t address = atoi(snd);
+        update_memory_map_by_word(main_win->memory_win, memory, address);
 
     } else if (strcmp(command, "") == 0) {
         return;

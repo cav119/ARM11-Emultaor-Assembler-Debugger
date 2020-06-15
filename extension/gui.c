@@ -51,15 +51,10 @@ static HelpWin *init_help_win(int width, int regs_win_height) {
     mvwprintw(help_win, 3, 1, "Run program:      %s | %s", RUN_CMD_S, RUN_CMD_L);
     mvwprintw(help_win, 4, 1, "Next instruction: %s | %s", NEXT_CMD_S, NEXT_CMD_L);
     mvwprintw(help_win, 5, 1, "Set breakpoint:   %s | %s", BREAK_CMD_S, BREAK_CMD_L);
-    mvwprintw(help_win, 6, 1, "Print memory:     %s | %s [-a]", PRINT_CMD_S, PRINT_CMD_L);
-    wattron(help_win, A_ITALIC);
-    mvwprintw(help_win, 7, 1, "    -a flag shows nearby memory", PRINT_CMD_S, PRINT_CMD_L);
-    wattroff(help_win, A_ITALIC);
-    mvwprintw(help_win, help_win->_maxy - 2, 1, "Scroll through command history\n using arrow keys");
+    mvwprintw(help_win, 6, 1, "Print memory:     %s | %s", PRINT_CMD_S, PRINT_CMD_L);
     box(help_win, 0, 0);
-
+    
     hw->win = help_win;
-
     return hw;
 }
 
@@ -71,7 +66,7 @@ static OutputWin *init_out_win(int width, int height, int mem_win_height) {
     }
     out_win->output_history = create_list();
     out_win->win = newwin(height - mem_win_height - 5, width - 2, mem_win_height + 2, 1);
-    mvwprintw(out_win->win, 1, 1, "Output of commands goes here...");
+    mvwprintw(out_win->win, 1, 1, "Started ARM11 Debugger... Enter 'run' or 'r' to start debugging.");
     box(out_win->win, 0, 0);
 
     return out_win;
@@ -171,10 +166,57 @@ void update_registers(RegistersWin *regs_win, uint32_t *registers) {
 
 /************ MEMORY WINDOW FUNCTIONS ************/
 
-// maybe be draw little endian table like in a hex editor?
-void update_memory_map(MemoryWin *mem_win, uint8_t *memory, uint32_t address) {
+void update_memory_map_by_word(MemoryWin *mem_win, uint8_t *memory, uint32_t address) {
+    wclear(mem_win->win);
+
+    uint32_t addr_rounded = address >= 0 ? (address / 4) * 4 : ((address - 5) / 4) * 4;
+    int midpoint = (MIDDLE_WINS_HEIGHT - 2) / 2;
+
+    int start, stop;
+    if (((int32_t) addr_rounded) - (midpoint + 1) * 4 < 0) {
+        start = 0;
+        stop = (MIDDLE_WINS_HEIGHT - 2) * 4;
+    } else if (((int32_t) addr_rounded) + (midpoint + 1) * 4 > 1000) {
+        start = 1000 - (MIDDLE_WINS_HEIGHT - 3) * 4;
+        stop = 1000 - 4;
+    } else {
+        start = addr_rounded - midpoint * 4;
+        stop = addr_rounded + (midpoint + 2) * 4;
+    }
+
+    // Print offsets at the top
+    int x_offset = 23;
+    for (int i = 0; i < 4; i++) {
+        mvwprintw(mem_win->win, 1, x_offset, "+%d", i);
+        x_offset += 6;
+    }
+
+    int addr = start;
+    for (int i = start; i < stop; i++) {
+        if (addr >= 1000 || addr < 0) {   // extra safety check
+            break;
+        }
+        if (addr_rounded == addr) {
+            wattron(mem_win->win, A_REVERSE);
+            mvwprintw(mem_win->win, i + 2 - start, 1, "-> M[ 0x%.8x ] = 0x%.2x  0x%.2x  0x%.2x  0x%.2x",
+                addr, memory[addr], memory[addr + 1], memory[addr + 2], memory[addr + 3]);
+            wattroff(mem_win->win, A_REVERSE);
+        } else {
+            mvwprintw(mem_win->win, i + 2 - start, 1, "   M[ 0x%.8x ] = 0x%.2x  0x%.2x  0x%.2x  0x%.2x", 
+                addr, memory[addr], memory[addr + 1], memory[addr + 2], memory[addr + 3]);
+        }
+        addr += 4;
+    }
+
+    box(mem_win->win, 0, 0);
+    wrefresh(mem_win->win);
+}
+
+
+void update_memory_map_by_byte(MemoryWin *mem_win, uint8_t *memory, uint32_t address) {
     int midpoint = (MIDDLE_WINS_HEIGHT - 2) / 2;
     // replace for total memory size
+    wclear(mem_win->win);
 
     // Check edge cases
     int start, stop;
@@ -184,8 +226,7 @@ void update_memory_map(MemoryWin *mem_win, uint8_t *memory, uint32_t address) {
     } else if (((int32_t) address) + midpoint + 1 > 1000) {
         start = 1000 - (MIDDLE_WINS_HEIGHT - 2);
         stop = 1000;
-    }
-    else {
+    } else {
         start = address - midpoint + 1;
         stop = address + midpoint + 1;
     }
@@ -199,6 +240,8 @@ void update_memory_map(MemoryWin *mem_win, uint8_t *memory, uint32_t address) {
             mvwprintw(mem_win->win, i + 1 - start, 1, "   M[0x%.8x] = 0x%.2x ", i, memory[i]);
         }
     }
+
+    box(mem_win->win, 0, 0);
     wrefresh(mem_win->win);
 }
 
@@ -242,5 +285,3 @@ void get_user_input(InputWin *inp_win) {
     mvwprintw(inp_win->win, 1, 1, "%s", inp_win->prompt_str);
     wrefresh(inp_win->win);
 }
-
-

@@ -67,8 +67,11 @@ void update_registers(RegistersWin *regs_win, uint32_t *registers);
 
 /*********** Memory window functions ***********/
 
-// Updates the memory window by jumping to the given address (no need to refresh)
-void update_memory_map(MemoryWin *mem_win, uint8_t *memory, uint32_t address);
+// Shows the memory map at the given address as a list of individual bytes
+void update_memory_map_by_byte(MemoryWin *mem_win, uint8_t *memory, uint32_t address);
+
+// Shows the memory map at a given address as a list of words (4 bytes)
+void update_memory_map_by_word(MemoryWin *mem_win, uint8_t *memory, uint32_t address);
 
 
 /*********** Output window functions ***********/
