@@ -80,8 +80,6 @@ void print_to_output(OutputWin *out_win, char *text);
 /*********** Input window functions ***********/
 
 // Gets a single string from input (returned on enter press, ie: \n)
-// void get_user_input(InputWin *inp_win, char key_char);
 void get_user_input(InputWin *inp_win);
-
 
 #endif

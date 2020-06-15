@@ -13,7 +13,7 @@
 
 
 // Handle Ctrl+C smoothly
-void exit_program_handler(int s) {
+void exit_program_handler(int sig) {
     exit(EXIT_SUCCESS); // calls destroy_gui()
 }
 
@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
         memory[i] = rand() % 0xFF;
     }
 
+    // Pass in the CPuState struct instead
     // Create and render the main window w/ all its subwindows
     MainWin *main_win = init_main_win(registers, memory);
     refresh_main_win(main_win);
@@ -46,30 +47,6 @@ int main(int argc, char **argv) {
 
     // MAIN EVENT LOOP
     while (1) {
-        // noecho();
-        // int choice = wgetch(main_win->inp_win->win);
-        // bool key_pressed = false;
-        // switch (choice) {
-        //     case KEY_UP:
-        //         navigate_cmd_history(main_win->inp_win, true);
-        //         key_pressed = true;
-        //         continue;
-        //     case KEY_DOWN:
-        //         navigate_cmd_history(main_win->inp_win, false);
-        //         key_pressed = true;
-        //         continue;
-        //     default:
-        //         break;
-        // }
-
-        // // move cursor to end of string if a key was pressed
-        // if (key_pressed) {
-        //     wmove(main_win->inp_win->win, 1, 1 + strlen(main_win->inp_win->input_str));
-        // }
-
-        // // if a non array key was pressed, ensure that the char is appended to front
-        // echo();
-        // get_user_input(main_win->inp_win, (char) choice); 
 
         get_user_input(main_win->inp_win); 
         parse_command(main_win->inp_win->input_str, main_win, registers, memory);
@@ -119,10 +96,13 @@ void parse_command(char *command, MainWin *main_win, uint32_t *registers, uint8_
         wrefresh(main_win->regs_win->win);
 
     } else if (strcasecmp(command, "mem") == 0) {
-        uint32_t address = 2;
+        uint32_t address = rand() % 1000;
         update_memory_map(main_win->memory_win, memory, address);
-        
+
+    } else if (strcmp(command, "") == 0) {
+        return;
+
     } else {
-        print_to_output(main_win->out_win, command);
+        print_to_output(main_win->out_win, "Invalid command, see help above.");
     }
 }

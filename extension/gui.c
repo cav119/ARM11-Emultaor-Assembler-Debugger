@@ -10,6 +10,10 @@
 
 static RegistersWin *init_regs_win(uint32_t *regs, int width) {
     RegistersWin *regs_win = malloc(sizeof(RegistersWin));
+    if (!regs_win) {
+        perror("Alloc failed in init_regs_win");
+        exit(EXIT_FAILURE);
+    }
     regs_win->win = newwin(REGS_WIN_HEIGHT, width - 2, 0, 1);
     box(regs_win->win, 0, 0);
     update_registers(regs_win, regs);
@@ -19,6 +23,10 @@ static RegistersWin *init_regs_win(uint32_t *regs, int width) {
 
 static MemoryWin *init_memory_win(uint8_t *memory, int width, int regs_win_height) {
     MemoryWin *memory_win = malloc(sizeof(MemoryWin));
+    if (!memory_win) {
+        perror("Alloc failed in init_memory_win");
+        exit(EXIT_FAILURE);
+    }
     memory_win->win = newwin(MIDDLE_WINS_HEIGHT, 2 * width / 3 - 1, regs_win_height + 1, 1);
     box(memory_win->win, 0, 0);
 
@@ -31,6 +39,10 @@ static MemoryWin *init_memory_win(uint8_t *memory, int width, int regs_win_heigh
 
 static HelpWin *init_help_win(int width, int regs_win_height) {
     HelpWin *hw = malloc(sizeof(HelpWin));
+    if (!hw) {
+        perror("Alloc failed in init_help_win");
+        exit(EXIT_FAILURE);
+    }
 
     WINDOW *help_win = newwin(MIDDLE_WINS_HEIGHT, width / 3, regs_win_height + 1, 2 * width / 3);
     wattron(help_win, A_BOLD);
@@ -53,6 +65,10 @@ static HelpWin *init_help_win(int width, int regs_win_height) {
 
 static OutputWin *init_out_win(int width, int height, int mem_win_height) {
     OutputWin *out_win = malloc(sizeof(OutputWin));
+    if (!out_win) {
+        perror("Alloc failed in init_out_win");
+        exit(EXIT_FAILURE);
+    }
     out_win->output_history = create_list();
     out_win->win = newwin(height - mem_win_height - 5, width - 2, mem_win_height + 2, 1);
     mvwprintw(out_win->win, 1, 1, "Output of commands goes here...");
@@ -63,6 +79,10 @@ static OutputWin *init_out_win(int width, int height, int mem_win_height) {
 
 static InputWin *init_inp_win(int width, int out_win_height) {
     InputWin *inp_win = malloc(sizeof(InputWin));
+    if (!inp_win) {
+        perror("Alloc failed in init_inp_win");
+        exit(EXIT_FAILURE);
+    }
     inp_win->win = newwin(INPUT_WIN_HEIGHT, width - 2, out_win_height + 3, 1);
     box(inp_win->win, 0, 0);   // set border
 
@@ -85,6 +105,10 @@ MainWin *init_main_win(uint32_t *regs, uint8_t *memory) {
     int width = getmaxx(stdscr);
     int height = getmaxy(stdscr);
     MainWin *win = malloc(sizeof(MainWin));
+    if (!win) {
+        perror("Alloc failed in init_main_win");
+        exit(EXIT_FAILURE);
+    }
 
     win->regs_win = init_regs_win(regs, width);
     win->memory_win = init_memory_win(memory, width, win->regs_win->win->_maxy);
@@ -187,6 +211,10 @@ void print_to_output(OutputWin *out_win, char *text) {
 
     // Store and print the output of the last command
     char *text_cpy = calloc(strlen(text) + 1, sizeof(char));
+    if (!text_cpy) {
+        perror("Alloc failed in print_to_output");
+        exit(EXIT_FAILURE);
+    }
     strcpy(text_cpy, text);
     wattron(out_win->win, A_BOLD);
     mvwprintw(out_win->win, out_win->win->_maxy - 1, 1, "%s", text_cpy);
@@ -207,23 +235,6 @@ void print_to_output(OutputWin *out_win, char *text) {
 
 /************ INPUT WINDOW FUNCTIONS ************/
 
-// void get_user_input(InputWin *inp_win, char key_char) {
-//     mvwprintw(inp_win->win, 1, 1, "%s%c", inp_win->prompt_str, key_char);
-
-//     wgetnstr(inp_win->win, inp_win->input_str, inp_win->input_str_len - PROMPT_SIZE - 2);
-//     char temp_buffer[inp_win->input_str_len - PROMPT_SIZE - 1];
-//     sprintf(temp_buffer, "%c%s", key_char, inp_win->input_str);
-
-//     memcpy(inp_win->input_str, temp_buffer, sizeof(temp_buffer));
-
-//     wclear(inp_win->win);
-//     box(inp_win->win, 0, 0);
-//     mvwprintw(inp_win->win, 1, 1, "%s", inp_win->prompt_str);
-//     wrefresh(inp_win->win);
-// }
-
-
-// with no cmd history navigation
 void get_user_input(InputWin *inp_win) {
     wgetnstr(inp_win->win, inp_win->input_str, inp_win->input_str_len - PROMPT_SIZE - 1);
     wclear(inp_win->win);
@@ -232,7 +243,4 @@ void get_user_input(InputWin *inp_win) {
     wrefresh(inp_win->win);
 }
 
-
-
-// up arrow
 
