@@ -58,6 +58,10 @@ char *str_clone(const char *src){
     }
     int len = strlen(src);
     char *clone = malloc(sizeof(char) * (len + 1));
+    if (!clone) {
+        perror("Error allocating memory for string clone");
+        exit(EXIT_FAILURE);
+    }
     for (int i = 0; i < len; i++){
         clone[i] = src[i];
     }

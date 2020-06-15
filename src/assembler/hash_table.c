@@ -24,6 +24,10 @@ unsigned long hash(const hashkey key, size_t size) {
 Entry *ht_pair(const hashkey key, const hashkey value, size_t key_size) {
     // allocate the entry
     Entry *entry = malloc(sizeof(Entry));
+    if (!entry) {
+        perror("Error allocating memory for hash table entry");
+        exit(EXIT_FAILURE);
+    }
     entry->key = key;
     entry->value = value;
     entry->key_size = key_size;
@@ -37,9 +41,17 @@ Entry *ht_pair(const hashkey key, const hashkey value, size_t key_size) {
 HashTable *ht_create(int (*comp)(const void*, const void*)) {
     // allocate table
     HashTable *hashtable = malloc(sizeof(HashTable));
+    if (!hashtable) {
+        perror("Error allocating memory for hash table");
+        exit(EXIT_FAILURE);
+    }
     hashtable->comp = comp;
     // allocate table entries
     hashtable->entries = malloc(sizeof(Entry*) * TABLE_SIZE);
+    if (!hashtable->entries) {
+        perror("Error allocating memory for hash table's entries");
+        exit(EXIT_FAILURE);
+    }
 
     // set each to null (needed for proper operation)
     int i = 0;
@@ -77,11 +89,11 @@ void ht_set(HashTable *hashtable, const hashkey key, const hashvalue value, size
 
         // walk to next
         prev = entry;
-        entry = prev->next;
+        entry = (Entry *) prev->next;
     }
 
     // end of chain reached without a match, add new
-    prev->next = ht_pair(key, value, size);
+    prev->next = (struct Entry *) ht_pair(key, value, size);
 }
 
 hashvalue ht_get(HashTable *hashtable, const hashkey key, size_t key_size) {
@@ -103,7 +115,7 @@ hashvalue ht_get(HashTable *hashtable, const hashkey key, size_t key_size) {
         }
 
         // proceed to next key if available
-        entry = entry->next;
+        entry = (Entry *) entry->next;
     }
 
     // reaching here means there were >= 1 entries but no key match
@@ -135,7 +147,7 @@ void ht_del(HashTable *hashtable, const hashkey key, size_t key_size) {
 
             // first item with a next entry
             if (entry->next != NULL && idx == 0) {
-                hashtable->entries[bucket] = entry->next;
+                hashtable->entries[bucket] = (Entry *) entry->next;
             }
 
             // last item
@@ -158,7 +170,7 @@ void ht_del(HashTable *hashtable, const hashkey key, size_t key_size) {
 
         // walk to next
         prev = entry;
-        entry = prev->next;
+        entry = (Entry *) prev->next;
 
         idx++;
     }
@@ -170,7 +182,7 @@ static void free_entry(Entry *entry){
     }
     free(entry->key);
     free(entry->value);
-    Entry *next = entry->next;
+    Entry *next = (Entry *) entry->next;
     free(entry);
     free_entry(next);
 }

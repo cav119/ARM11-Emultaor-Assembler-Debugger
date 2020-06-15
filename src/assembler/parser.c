@@ -17,7 +17,11 @@
 
 
 char **instr_to_tokens(char array[]) {
-    char **words = calloc(MAX_TOKENS, LINE_SIZE * sizeof(char));
+    char **words = calloc(MAX_TOKENS, LINE_SIZE);
+    if (!words) {
+        perror("Error allocating memory for words in instr_to_tokens");
+        exit(EXIT_FAILURE);
+    }
     char *arr = strtok(array, " ,:\n");
     int i = 0;
     while (arr != NULL) {
@@ -71,6 +75,10 @@ static void put_instr_to_label(bool *label_next_instr, long curr_number, HashTab
     }
     *label_next_instr = false;
     long *line = malloc(sizeof(long));
+    if (!line) {
+        perror("Error allocating memory for line in put_instr_to_label");
+        exit(EXIT_FAILURE);
+    }
     *line = curr_number;
     for (int i = 0; i < labels->size; i++) {
         WaitingLabel *label = labels->elements[i];
@@ -132,14 +140,14 @@ void decode_instruction(const char *instr[], long *instr_number,
     if (same_str(instr[0], "mul") || same_str(instr[0], "mla")) {
         // Multiply instr
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
-        new_instruction = encode_multiply(instr, instr_number);
+        new_instruction = encode_multiply((char **) instr, instr_number);
         list_append(instructions, new_instruction);
         *instr_number += 4;
 
     }
     else if (same_str(instr[0], "ldr") || same_str(instr[0], "str")) {
         // Single data transfer instr
-        new_instruction = encode_sdt_instr_to_binary(instr, instr_number, dumped_bytes, 
+        new_instruction = encode_sdt_instr_to_binary((char **) instr, instr_number, dumped_bytes, 
             pending_offset_addrs);
         list_append(instructions, new_instruction);
         *instr_number += 4;
@@ -147,7 +155,7 @@ void decode_instruction(const char *instr[], long *instr_number,
     // branch instrucntion or label
     else if (instr[0][0] == 'b' || instr[1] == NULL) {
         put_instr_to_label(label_next_instr, *instr_number, symbol_table, waiting_labels);
-        AsmInstruction *branch = encode_branch_instr(instr, symbol_table, waiting_branches ,
+        AsmInstruction *branch = encode_branch_instr((char **) instr, symbol_table, waiting_branches ,
                 label_next_instr, waiting_labels, instr_number);
       
         if (instr[1] != NULL) {
@@ -171,7 +179,7 @@ void decode_instruction(const char *instr[], long *instr_number,
                break;
            }
         }
-        new_instruction = encode_dp_instr_to_binary(instr, tokens_size , instr_number);
+        new_instruction = encode_dp_instr_to_binary((char **) instr, tokens_size , instr_number);
         list_append(instructions, new_instruction);
         *instr_number += 4;
     }
@@ -223,8 +231,12 @@ static void calculate_pending_offsets(List *instructions, List *dumped_bytes,
         if (instr_addr > 0) {
             offset -= PC_PIPE_LAG / 2 - 1;
         }
-        *(instr->code) |= 0xFFF & abs(offset);
+        *(instr->code) |= 0xFFF & offset;
         AsmInstruction *constant_bytes = malloc(sizeof(AsmInstruction));
+        if (!constant_bytes) {
+            perror("Error allocating memory for constant_bytes asm instruction");
+            exit(EXIT_FAILURE);
+        }
         constant_bytes->code = curr_bytes_node->elem;
         list_append(instructions, constant_bytes);
 
@@ -245,6 +257,10 @@ void one_pass_assemble(FILE* inp_file, FILE* out_file) {
 
     // checks if a label needs to be found
     bool *next_instr_to_label = malloc(sizeof(bool));
+    if (!next_instr_to_label) {
+        perror("Error allocating memory for next_instr_to_label (parser.c)");
+        exit(EXIT_FAILURE);
+    }
     *next_instr_to_label = false;
 
     List *instructions = create_list();
@@ -257,7 +273,7 @@ void one_pass_assemble(FILE* inp_file, FILE* out_file) {
     char buffer[LINE_SIZE];
     while (fgets(buffer, LINE_SIZE, inp_file)) {
         char **words = instr_to_tokens(buffer);
-        decode_instruction(words , &current_line, symbol_table,
+        decode_instruction((const char **) words , &current_line, symbol_table,
                 waiting_branches, next_instr_to_label, waiting_labels, 
                 instructions, dumped_bytes, pending_offset_instr_addrs);
         // frees the tokens after the operations are done 
@@ -275,13 +291,13 @@ void one_pass_assemble(FILE* inp_file, FILE* out_file) {
 
     // Free all the allocated resources
     free(next_instr_to_label);
-    
-    arrlist_destroy_free(waiting_labels, free_waiting_label);
-    arrlist_destroy_free(waiting_branches, free_waiting_branch);
+
+    arrlist_destroy_free(waiting_labels, (void (*)(void *)) free_waiting_label);
+    arrlist_destroy_free(waiting_branches, (void (*)(void *)) free_waiting_branch);
     // this free suffices since the HT only has char *keys, and long *values
     // so there is no need for a more advanced free function
     ht_free(symbol_table);
 
-    list_destroy(instructions, free_asm_instr);
+    list_destroy(instructions, (void (*)(void *)) free_asm_instr);
 }
 

@@ -1,9 +1,14 @@
 #include "list.h"
 
-
+#include <stdio.h>
 
 List *create_list(void){
-    return calloc(1, sizeof(List));
+    List *list = calloc(1, sizeof(List));
+    if (!list) {
+        perror("Error allocating memory for list");
+        exit(EXIT_FAILURE);
+    }
+    return list;
 }
 
 void *list_get_head(List *list){
@@ -91,7 +96,12 @@ void *list_get_index(List *list, int index){
 
 // Returns a new node with NULL fields
 static ListNode* node_alloc(void){
-    return calloc(1, sizeof(ListNode));
+    ListNode *node = calloc(1, sizeof(ListNode));
+    if (!node) {
+        perror("Error allocating memory for list node");
+        exit(EXIT_FAILURE);
+    }
+    return node;
 }
 
 void list_append(List *list, void *elem){

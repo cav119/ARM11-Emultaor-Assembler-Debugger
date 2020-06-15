@@ -20,6 +20,10 @@ AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], long *curr_instr,
     List *dumped_bytes_list, List *pending_offset_instr_addrs) {
 
     AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
+    if (!inst) {
+        perror("Error allocating memory for asm instruction");
+        exit(EXIT_FAILURE);
+    }
     inst->instr_line = *curr_instr;
     // set condition code, up bit and 01 format bits
     uint32_t bin_code = 0xE << 28 | 1 << 26 | 1 << 23;
@@ -44,6 +48,10 @@ AsmInstruction *encode_sdt_instr_to_binary(char *tokens[], long *curr_instr,
         return encode_dp_instr_to_binary(mov_instr, tokens_size, curr_instr);
     }
     uint32_t *actual_code = malloc(sizeof(uint32_t));
+    if (!actual_code) {
+        perror("Error allocating memory for actual_code in single_data_trans");
+        exit(EXIT_FAILURE);
+    }
     *actual_code = bin_code;
     inst->code = actual_code;
     return inst;
@@ -198,11 +206,19 @@ bool set_address_bits(char *tokens[], uint32_t *bin_code, uint32_t curr_instr_ad
 
         // add bytes to the list to be dumped later
         void *bytes = malloc(sizeof(uint32_t));
+        if (!bytes) {
+            perror("Error allocating memory for bytes in single_data_trans");
+            exit(EXIT_FAILURE);
+        }
         *((uint32_t *) bytes) = address_const;
         list_append(dumped_bytes_list, bytes);
 
         // mark the address of this instruction as pending for the offset calculation
         void *index = malloc(sizeof(uint32_t));
+        if (!index) {
+            perror("Error allocating memory for index in single_data_trans");
+            exit(EXIT_FAILURE);
+        }
         *((uint32_t *) index) = curr_instr_addr / 4;
         list_append(pending_offset_instr_addrs, index);
         
