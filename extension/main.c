@@ -100,8 +100,6 @@ void navigate_cmd_history(InputWin *inp_win, bool up) {
 // Parses commands and executes them where possible
 void parse_command(char *command, MainWin *main_win, uint32_t *registers, uint8_t *memory) {
     // do any extra formatting, ie: ignore spaces
-    static int times = 1;
-
     srand(time(NULL));
 
     // Check single word commands

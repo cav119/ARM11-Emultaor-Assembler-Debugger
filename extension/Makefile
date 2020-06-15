@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -pedantic -std=c99 -g
 LDFLAGS = -lcurses -lpthread
 
-SOURCE_FILES = gui.c
+SOURCE_FILES = gui.c str_list.c
 
 .PHONY = clean
 

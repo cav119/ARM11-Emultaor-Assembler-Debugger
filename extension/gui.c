@@ -23,7 +23,7 @@ static MemoryWin *init_memory_win(uint8_t *memory, int width, int regs_win_heigh
     box(memory_win->win, 0, 0);
 
     for (int i = 0; i < MIDDLE_WINS_HEIGHT - 2; i++) {
-        mvwprintw(memory_win->win, i + 1, 1, "   M[0x%.8x] = 0x%.2x ", i, 0);
+        mvwprintw(memory_win->win, i + 1, 1, "M[0x%.8x] = 0x%.2x ", i, 0);
     }
 
     return memory_win;
@@ -53,6 +53,7 @@ static HelpWin *init_help_win(int width, int regs_win_height) {
 
 static OutputWin *init_out_win(int width, int height, int mem_win_height) {
     OutputWin *out_win = malloc(sizeof(OutputWin));
+    out_win->output_history = create_list();
     out_win->win = newwin(height - mem_win_height - 5, width - 2, mem_win_height + 2, 1);
     mvwprintw(out_win->win, 1, 1, "Output of commands goes here...");
     box(out_win->win, 0, 0);
@@ -107,6 +108,7 @@ void destroy_main_win(MainWin *win) {
     free(win->regs_win);
     free(win->memory_win);
     free(win->help_win);
+    list_destroy(win->out_win->output_history, free);
     free(win->out_win);
 
     free(win->inp_win->input_str);
@@ -182,7 +184,23 @@ void update_memory_map(MemoryWin *mem_win, uint8_t *memory, uint32_t address) {
 void print_to_output(OutputWin *out_win, char *text) {
     wclear(out_win->win);
     box(out_win->win, 0, 0);
-    mvwprintw(out_win->win, 1, 1, "%s", text);
+
+    // Store and print the output of the last command
+    char *text_cpy = calloc(strlen(text) + 1, sizeof(char));
+    strcpy(text_cpy, text);
+    wattron(out_win->win, A_BOLD);
+    mvwprintw(out_win->win, out_win->win->_maxy - 1, 1, "%s", text_cpy);
+    wattroff(out_win->win, A_BOLD);
+    list_append(out_win->output_history, text_cpy);
+
+    // Print output history
+    for (int i = 1; i < out_win->win->_maxy - 1; i++) {
+        char *old = list_get_index(out_win->output_history, out_win->output_history->size - i - 1);
+        if (old) {
+            mvwprintw(out_win->win, out_win->win->_maxy - i - 1, 1, "%s", old);
+        }
+    }
+
     wrefresh(out_win->win);
 }
 

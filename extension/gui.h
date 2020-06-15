@@ -2,6 +2,7 @@
 #define GUI_H_
 
 #include <ncurses.h>
+#include "str_list.h"
 
 #define PROMPT_TXT "> "
 #define PROMPT_SIZE 2
@@ -29,6 +30,7 @@ typedef struct {
 
 typedef struct {
     WINDOW *win;
+    List *output_history;
 } OutputWin;
 
 typedef struct {
