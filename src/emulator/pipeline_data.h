@@ -1,6 +1,8 @@
 #ifndef PIPELINE_DATA_H
 #define PIPELINE_DATA_H
 
+#include "../extension/command_parser.h"
+
 // instruction_type enum
 typedef enum {
 	DATA_PROCESS,

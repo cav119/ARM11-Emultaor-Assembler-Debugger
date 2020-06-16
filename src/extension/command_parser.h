@@ -7,14 +7,13 @@
 
 #include "commands.h"
 #include "../emulator/cpu_state.h"
-#include "break_list.h"
+
+#include "../assembler/hash_table.h"
 
 #define MAX_COMMAND_LEN (100)
 
 // Gets input and executes a command, returns whether the user
 // hit the exit command that halts the "debugger"
-bool get_input_and_execute(CpuState *cpu_state, List *list);
-
-int *compare_breakpoint(BreakCommand *b1, BreakCommand *b2);
+bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht);
 
 #endif

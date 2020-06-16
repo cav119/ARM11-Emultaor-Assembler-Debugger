@@ -4,6 +4,9 @@
 #include "../emulator/pipeline_executor.h" 
 #include "extension_utilities.h"
 
+
+
+
 static bool same_str(char *str1, char *str2){
     if (!str1 || !str2){
         return false;
@@ -11,19 +14,6 @@ static bool same_str(char *str1, char *str2){
     return strcmp(str1, str2) == 0;
 }
 
-int *compare_breakpoint(BreakCommand *b1, BreakCommand *b2){
-    int *compare = calloc(1, sizeof(int *));
-    if (!b1 || !b2 || !b1->break_num || !b2->break_num || !b1->target || !b2->target){
-        compare = NULL;
-    } else if (b1->target > b2->target){
-        *compare = 1;
-    } else if (b1->target < b2->target){
-        *compare = -1;
-    } else {
-        *compare = 0;
-    }
-    return compare;
-}
 
 static char* clone_str(char *str){
     if (str == NULL){
@@ -121,7 +111,7 @@ static PrintCommand *tokens_to_print_comm(char **tokens){
 
 }
 
-static ExecutableCommand *parse(char *input,  List *list){
+static ExecutableCommand *parse(char *input,  HashTable *ht){
     printf("instr = %s \n", input);
     char *copy = calloc(sizeof(char),  MAX_COMMAND_LEN);
     strcpy(copy, input);
@@ -144,9 +134,9 @@ static ExecutableCommand *parse(char *input,  List *list){
         free(copy);
         comm->type = BREAK_CMD;
         char **tokens = tokenize_instr(input, 2);
-        if(list == NULL){
+        if(ht == NULL){
             //invalid list
-            perror("null list");
+            perror("null table");
             free(comm);
             return NULL;
         }
@@ -156,28 +146,21 @@ static ExecutableCommand *parse(char *input,  List *list){
             free(comm);
             return NULL;
         }
-        BreakCommand *break_cmd = calloc(1, sizeof(BreakCommand));
         if(!tokens[0] || !tokens[1]){
             //not 2 tokens
             perror("one of the tokens are null");
             free(comm);
-            free(break_cmd);
             return NULL;
         }
         if(!same_str(tokens[0], BREAK_CMD_S) && !same_str(tokens[0], BREAK_CMD_L)){
             //not break or b
             perror("the command is not a breakpoint command");
             free(comm);
-            free(break_cmd);
             return NULL;
         }
-        list->size++;
-        break_cmd->break_num = list->size;
-        break_cmd->target = atoi(tokens[1]);
-        List_Elem *elem = create_elem();
-        elem->command = break_cmd;
-        add_elem_front(list, elem);
-        print_list(list);
+        uint32_t break_cmd = atoi(tokens[1]);
+        bool is_active = true;
+        ht_set(ht, &break_cmd, &is_active, sizeof(uint32_t) / sizeof(char));
     }
     else {
         // print command
@@ -271,17 +254,17 @@ static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
 }
 
 
-bool get_input_and_execute(CpuState *cpu_state, List *list){
+bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht){
     char input[MAX_COMMAND_LEN];
     printf(PROMPT_TXT);
     fgets(input, MAX_COMMAND_LEN, stdin);
 
     // gets rid of the trailing \n
     input[strlen(input)- 1] = '\0';
-    ExecutableCommand *comm = parse(input, list);
+    ExecutableCommand *comm = parse(input, ht);
     if (comm == NULL){
         puts("You gave me a wrong command. Type 'help' if you don't know the commands'");
-        return get_input_and_execute(cpu_state, list);
+        return get_input_and_execute(cpu_state, is_stepping, ht);
     }
     bool ending = execute_command(comm, cpu_state);
     if (!ending && comm->type != NEXT_CMD && comm->type != RUN_CMD) {
@@ -289,7 +272,10 @@ bool get_input_and_execute(CpuState *cpu_state, List *list){
             free(comm->command.print);
         }
         free(comm);
-        return get_input_and_execute(cpu_state, list);
+        return get_input_and_execute(cpu_state, is_stepping, ht);
+    }
+    if (comm->type == RUN_CMD){
+        *is_stepping = false;
     }
     if (ending){
         free(comm);

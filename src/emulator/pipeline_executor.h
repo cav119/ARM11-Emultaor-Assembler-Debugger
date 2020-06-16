@@ -7,8 +7,8 @@
 #include "branch_instr.h"
 #include "single_data_transfer_instr.h"
 #include "data_proc_instr.h"
-#include "../extension/hash_table.h"
 #include "../extension/command_parser.h"
+#include "../assembler/hash_table.h"
 
 // Initialises and allocates memory for a Pipe struct
 Pipe *init_pipeline(CpuState *cpu_state);
@@ -26,7 +26,7 @@ Instruction *decode_instruction(uint32_t bits);
 bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe);
 
 // Starts the fetch-decode-execute process until finished
-void start_pipeline(CpuState *cpu_state, bool is_extenstion);
+void start_pipeline(CpuState *cpu_state, bool *is_extenstion);
 
 // Possibly ends the pipeline, returns true if pipeline was indeed ended
 // Return value true can be caused by a branch instruction which forces code to continue

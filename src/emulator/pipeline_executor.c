@@ -5,8 +5,8 @@
 #include "utilities.h"
 #include "pipeline_executor.h"
 #include "pipeline_data.h"
-
-
+#include "../assembler/hash_table.h"
+#include "../extension/command_parser.h"
 
 // If running the extension, output this message to stdout
 #define EXTENSION_WRITE(is_ext, msg) \
@@ -38,8 +38,6 @@ uint32_t fetch_big_endian(uint32_t ptr, CpuState *cpu_state) {
 
     return index_big_endian_bytes(&(cpu_state->memory[ptr]));
 }
-
-
 
 
 bool is_branch_instr(uint32_t bits) {
@@ -113,20 +111,19 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
 
 // Internal helper recursive function for the pipeline execution, makes the code
 // cleaner and as efficient using gcc's tail call optimisation
-static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension, bool is_stepping, List *list) {
+static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool *is_extension, bool is_stepping, HashTable *ht) {
     if (pipe->fetching) {
         pipe->executing = pipe->decoding;
         pipe->decoding = decode_instruction(pipe->fetching);
         if(is_extension){
-            BreakCommand *break_point = contains_breakpoint(cpu_state->registers[PC] - 8, list);
-            if(break_point != NULL){
-                printf("reached breakpoint %d at address %d",break_point->break_num,cpu_state->registers[PC]);
+            if (ht_get(ht,&cpu_state->registers[PC], sizeof(uint32_t) / sizeof(char))){
+                printf("reached breakpoint at address %d",cpu_state->registers[PC]);
                 is_stepping = true;
             }
         }
 
         bool branch_instr_succeeded = false;
-        if (is_extension && is_stepping && get_input_and_execute(cpu_state, list)){
+        if (is_extension && is_stepping && get_input_and_execute(cpu_state, &is_stepping, ht)){
             // must have hit the exit command
             // need to free pipe before aborting
             if (pipe->executing){
@@ -155,24 +152,41 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
             increment_pc(cpu_state);
         }
         // Ask user for input
-        start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, list);
+        start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, ht);
     } else {
-        bool ended = end_pipeline(pipe, cpu_state, is_extension, is_stepping, list);
+        bool ended = end_pipeline(pipe, cpu_state, is_extension, is_stepping, ht);
         if (!ended) {
-            start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, list);
+            start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, ht);
         }
     }
 }
+static int compare_address(const void *b1, const void *b2){
+    uint32_t *break_1 = (uint32_t *) b1;
+    uint32_t *break_2 = (uint32_t *) b2;
+    int compare;
+    if (!break_1 || !break_2){
+        perror("null breakpoints");
+        exit(EXIT_FAILURE);
+    } else if (break_1 > break_2){
+        compare = 1;
+    } else if (break_1 < break_2){
+        compare = -1;
+    } else {
+        compare = 0;
+    }
+    return compare;
+}
 
 
-void start_pipeline(CpuState *cpu_state, bool is_extension) {
-    HashTable  *hash_table = ht_create(compare_breakpoint);
+void start_pipeline(CpuState *cpu_state, bool *is_extension) {
+    HashTable  *hash_table = ht_create(compare_address);
+    bool *is_stepping = malloc(sizeof(bool *));
+    *is_stepping = true;
     if(is_extension){
         EXTENSION_WRITE(is_extension, "please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
-        get_input_and_execute(cpu_state, list);
-        get_input_and_execute(cpu_state, list);
+        get_input_and_execute(cpu_state, is_stepping, hash_table);
     }
-    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, false, list);
+   start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, is_stepping, hash_table);
 }
 
 
