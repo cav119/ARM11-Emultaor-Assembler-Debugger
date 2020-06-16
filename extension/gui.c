@@ -15,6 +15,10 @@ static RegistersWin *init_regs_win(uint32_t *regs, int width) {
         exit(EXIT_FAILURE);
     }
     regs_win->win = newwin(REGS_WIN_HEIGHT, width - 2, 0, 1);
+    if (!regs_win->win) {
+        perror("Please make your terminal bigger to run the debugger.");
+        exit(EXIT_FAILURE);
+    }
     box(regs_win->win, 0, 0);
     update_registers(regs_win, regs);
 
@@ -28,8 +32,12 @@ static MemoryWin *init_memory_win(uint8_t *memory, int width, int regs_win_heigh
         exit(EXIT_FAILURE);
     }
     memory_win->win = newwin(MIDDLE_WINS_HEIGHT, 2 * width / 3 - 1, regs_win_height + 1, 1);
-    box(memory_win->win, 0, 0);
+    if (!memory_win->win) {
+        perror("Please make your terminal bigger to run the debugger.");
+        exit(EXIT_FAILURE);
+    }
 
+    box(memory_win->win, 0, 0);
     for (int i = 0; i < MIDDLE_WINS_HEIGHT - 2; i++) {
         mvwprintw(memory_win->win, i + 1, 1, "M[0x%.8x] = 0x%.2x ", i, 0);
     }
@@ -45,6 +53,11 @@ static HelpWin *init_help_win(int width, int regs_win_height) {
     }
 
     WINDOW *help_win = newwin(MIDDLE_WINS_HEIGHT, width / 3, regs_win_height + 1, 2 * width / 3);
+    if (!help_win) {
+        perror("Please make your terminal bigger to run the debugger.");
+        exit(EXIT_FAILURE);
+    }
+
     wattron(help_win, A_BOLD);
     mvwprintw(help_win, 1, help_win->_maxx / 2 - strlen("--- COMMANDS ---") / 2, "--- COMMANDS ---");
     wattroff(help_win, A_BOLD);
@@ -66,6 +79,11 @@ static OutputWin *init_out_win(int width, int height, int mem_win_height) {
     }
     out_win->output_history = create_list();
     out_win->win = newwin(height - mem_win_height - 5, width - 2, mem_win_height + 2, 1);
+    if (!out_win->win) {
+        perror("Please make your terminal bigger to run the debugger.");
+        exit(EXIT_FAILURE);
+    }
+
     mvwprintw(out_win->win, 1, 1, "Started ARM11 Debugger... Enter 'run' or 'r' to start debugging.");
     box(out_win->win, 0, 0);
 
@@ -79,7 +97,11 @@ static InputWin *init_inp_win(int width, int out_win_height) {
         exit(EXIT_FAILURE);
     }
     inp_win->win = newwin(INPUT_WIN_HEIGHT, width - 2, out_win_height + 3, 1);
-    box(inp_win->win, 0, 0);   // set border
+    if (!inp_win->win) {
+        perror("Please make your terminal bigger to run the debugger.");
+        exit(EXIT_FAILURE);
+    }
+    box(inp_win->win, 0, 0);
 
     strcpy(inp_win->prompt_str, PROMPT_TXT);
     inp_win->input_str_len = inp_win->win->_maxx - 1;
