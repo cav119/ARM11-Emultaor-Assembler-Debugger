@@ -36,8 +36,7 @@ int main(int argc, char **argv) {
     }
     uint8_t *memory = calloc(1000, sizeof(uint8_t));
     for (int i = 0; i < 1000; i++) {
-        // memory[i] = rand() % 0xFF;
-        memory[i] = i;
+        memory[i] = rand() % 0xFF;
     }
 
     // Pass in the CPuState struct instead
@@ -61,19 +60,6 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-void navigate_cmd_history(InputWin *inp_win, bool up) {
-    wclear(inp_win->win);
-    box(inp_win->win, 0, 0);
-    char *command;
-    if (up) {
-        command = "this";
-    } else {
-        command = "that";
-    }
-    mvwprintw(inp_win->win, 1, 1, "%s%s", inp_win->prompt_str, command);
-    strcpy(inp_win->input_str, command);
-    wrefresh(inp_win->win);
-}
 
 // Parses commands and executes them where possible
 void parse_command(char *command, MainWin *main_win, uint32_t *registers, uint8_t *memory) {

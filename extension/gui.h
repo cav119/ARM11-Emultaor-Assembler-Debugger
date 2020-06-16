@@ -38,7 +38,6 @@ typedef struct {
     char prompt_str[PROMPT_SIZE + 1];
     char *input_str;
     int input_str_len;
-    // command history stack here
 } InputWin;
 
 typedef struct {
