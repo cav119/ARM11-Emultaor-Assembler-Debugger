@@ -28,6 +28,13 @@ static char* clone_str(char *str){
     return clone;
 }
 
+static void free_tokens(char **tokens, int length){
+    for (int i = 0; i < length; i++) {
+        free(tokens[i]);
+    }
+    free(tokens);
+}
+
 static char **tokenize_instr(char *instr, int args){
 
     char **tokens = calloc(args, sizeof(char) * MAX_COMMAND_LEN);
@@ -112,7 +119,6 @@ static PrintCommand *tokens_to_print_comm(char **tokens){
 }
 
 static ExecutableCommand *parse(char *input,  HashTable *ht){
-    printf("instr = %s \n", input);
     char *copy = calloc(sizeof(char),  MAX_COMMAND_LEN);
     strcpy(copy, input);
     ExecutableCommand *comm = calloc(1, sizeof(ExecutableCommand));
@@ -138,11 +144,11 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
             //invalid list
             perror("null table");
             free(comm);
+            free_tokens(tokens, 2);
             return NULL;
         }
         if(tokens == NULL){
             //invalid break
-            perror("null tokens");
             free(comm);
             return NULL;
         }
@@ -150,17 +156,40 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
             //not 2 tokens
             perror("one of the tokens are null");
             free(comm);
+            free_tokens(tokens, 2);
             return NULL;
         }
         if(!same_str(tokens[0], BREAK_CMD_S) && !same_str(tokens[0], BREAK_CMD_L)){
             //not break or b
             perror("the command is not a breakpoint command");
             free(comm);
+            free_tokens(tokens, 2);
             return NULL;
         }
-        uint32_t break_cmd = atoi(tokens[1]);
-        bool is_active = true;
-        ht_set(ht, &break_cmd, &is_active, sizeof(uint32_t) / sizeof(char));
+        if (!only_numbers_str(tokens[1])){
+            //not a number
+            free(comm);
+            free_tokens(tokens, 2);
+            return NULL;
+        }
+        uint32_t *break_cmd = malloc(sizeof(uint32_t *));
+        *break_cmd = atoi(tokens[1]);
+        if(!*break_cmd){
+            //not a number
+            free(comm);
+            free_tokens(tokens, 2);
+            return NULL;
+        }
+        if (*break_cmd % 4 != 0){
+            puts("the memory address must be a multiple of 4 due to the 32 bit system nature");
+            free(comm);
+            free_tokens(tokens, 2);
+            return NULL;
+        }
+        bool *is_active = malloc(sizeof(bool *));
+        *is_active = true;
+        ht_set(ht, break_cmd, is_active, sizeof(uint32_t) / sizeof(char));
+        free_tokens(tokens, 2);
     }
     else {
         // print command
@@ -169,13 +198,12 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
         if (tokens == NULL){
             // invalid instruction
             free(comm);
+            free_tokens(tokens, 3);
             return NULL;
         }
         PrintCommand *print = tokens_to_print_comm(tokens);
-        for (int i = 0; i < 3; i++){
-            free(tokens[i]);
-        }
-        free(tokens);
+        free_tokens(tokens, 3);
+
         if (!print){
             free(comm);
             return NULL;

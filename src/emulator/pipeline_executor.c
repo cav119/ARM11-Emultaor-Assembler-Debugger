@@ -154,7 +154,7 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool *is_exte
         // Ask user for input
         start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, ht);
     } else {
-        bool ended = end_pipeline(pipe, cpu_state, is_extension, is_stepping, ht);
+        bool ended = end_pipeline(pipe, cpu_state, is_extension, &is_stepping, ht);
         if (!ended) {
             start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, ht);
         }
@@ -183,14 +183,14 @@ void start_pipeline(CpuState *cpu_state, bool *is_extension) {
     bool *is_stepping = malloc(sizeof(bool *));
     *is_stepping = true;
     if(is_extension){
-        EXTENSION_WRITE(is_extension, "please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
-        get_input_and_execute(cpu_state, is_stepping, hash_table);
+        puts("please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
+        //get_input_and_execute(cpu_state, is_stepping, hash_table);
     }
    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, is_stepping, hash_table);
 }
 
 
-bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool is_stepping, HashTable *hash_table) {
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool *is_extension, bool *is_stepping, HashTable *hash_table) {
     // Must have fetched a halt
     // since it stops when fetching a halt the block of code simulates executing 2 cycles
     // first executing pipe->executing, and then pipe->decoding
@@ -219,6 +219,9 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool is_st
 
     increment_pc(cpu_state);
     free(pipe);
+  // free(is_stepping);
+  //free(is_extension);
+    ht_free(hash_table);
 
     return true;
 }
