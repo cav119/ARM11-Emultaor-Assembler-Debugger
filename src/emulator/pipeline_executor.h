@@ -7,6 +7,8 @@
 #include "branch_instr.h"
 #include "single_data_transfer_instr.h"
 #include "data_proc_instr.h"
+#include "../extension/command_parser.h"
+#include "../assembler/hash_table.h"
 
 // Initialises and allocates memory for a Pipe struct
 Pipe *init_pipeline(CpuState *cpu_state);
@@ -28,7 +30,7 @@ void start_pipeline(CpuState *cpu_state, bool is_extenstion);
 
 // Possibly ends the pipeline, returns true if pipeline was indeed ended
 // Return value true can be caused by a branch instruction which forces code to continue
-bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension);
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_stepping, HashTable *hash_table);
 
 // After executing a branch instruction cpu must clear pipeline
 void clear_pipe(Pipe *pipe);

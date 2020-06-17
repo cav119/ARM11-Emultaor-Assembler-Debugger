@@ -1,8 +1,12 @@
 
 
 #include "command_parser.h"
-#include "../emulator/pipeline_executor.h" 
+#include "../emulator/pipeline_executor.h"
+#include "../assembler/hash_table.h"
 #include "extension_utilities.h"
+
+
+
 
 static bool same_str(char *str1, char *str2){
     if (!str1 || !str2){
@@ -10,6 +14,7 @@ static bool same_str(char *str1, char *str2){
     }
     return strcmp(str1, str2) == 0;
 }
+
 
 static char* clone_str(char *str){
     if (str == NULL){
@@ -24,8 +29,16 @@ static char* clone_str(char *str){
     return clone;
 }
 
-static char** tokenize_print_instr(char *instr){
-    char **tokens = calloc(3, sizeof(char) * MAX_COMMAND_LEN);
+static void free_tokens(char **tokens, int length){
+    for (int i = 0; i < length; i++) {
+        free(tokens[i]);
+    }
+    free(tokens);
+}
+
+static char **tokenize_instr(char *instr, int args){
+
+    char **tokens = calloc(args, sizeof(char) * MAX_COMMAND_LEN);
     int curr = 0;
     char *tok = strtok(instr, " ");
     while (tok){
@@ -33,7 +46,7 @@ static char** tokenize_print_instr(char *instr){
         curr++;
         tok = strtok(NULL, " ");
     }
-    if (curr != 3){
+    if (curr != args){
         for (int i = 0; i < curr; i++){
             free(tokens[i]);
         }
@@ -106,7 +119,9 @@ static PrintCommand *tokens_to_print_comm(char **tokens){
 
 }
 
-static ExecutableCommand *parse(char *input){
+static ExecutableCommand *parse(char *input,  HashTable *ht){
+    char *copy = calloc(sizeof(char),  MAX_COMMAND_LEN);
+    strcpy(copy, input);
     ExecutableCommand *comm = calloc(1, sizeof(ExecutableCommand));
     // could be handled more nicely with a hashtable
     // but there's no reason to allocate so much memory just for 4 command types
@@ -119,33 +134,70 @@ static ExecutableCommand *parse(char *input){
     else if (same_str(input, NEXT_CMD_L) || same_str(input, NEXT_CMD_S)){
         comm->type = NEXT_CMD;
     }
-    else if (same_str(input, BREAK_CMD_S) || same_str(input, BREAK_CMD_L)) {
-        comm->type = BREAK_CMD;
-    }
     else if (same_str(input, EXIT_CMD_S) || same_str(input, EXIT_CMD_L)){
         comm->type = EXIT_CMD;
+    }
+    else if (same_str(strtok(copy, " "), BREAK_CMD_S) || same_str(strtok(copy, " "), BREAK_CMD_L)) {
+        comm->type = BREAK_CMD;
+        char **tokens = tokenize_instr(input, 2);
+        if(ht == NULL){
+            //invalid list
+            perror("null table");
+            free(comm);
+            free_tokens(tokens, 2);
+            free(copy);
+            return NULL;
+        }
+        if(tokens == NULL){
+            //invalid break
+            free(comm);
+            free(copy);
+            return NULL;
+        }
+        if (!only_numbers_str(tokens[1])){
+            //not a number
+            free(comm);
+            free_tokens(tokens, 2);
+            free(copy);
+            return NULL;
+        }
+        uint32_t *break_cmd = malloc(sizeof(uint32_t));
+        *break_cmd = atoi(tokens[1]);
+        if (*break_cmd % 4 != 0){
+            puts("The memory address must be a multiple of 4 due to the 32 bit system nature\n");
+            free(comm);
+            free(break_cmd);
+            free_tokens(tokens, 2);
+            free(copy);
+            return NULL;
+        }
+        bool *is_active = malloc(sizeof(bool));
+        *is_active = true;
+        ht_set(ht, break_cmd, is_active, sizeof(uint32_t) / sizeof(char));
+        free_tokens(tokens, 2);
     }
     else {
         // print command
         comm->type = PRINT_CMD;
-        char **tokens = tokenize_print_instr(input);
+        char **tokens = tokenize_instr(input, 3);
         if (tokens == NULL){
             // invalid instruction
             free(comm);
+            free(copy);
             return NULL;
         }
         PrintCommand *print = tokens_to_print_comm(tokens);
-        for (int i = 0; i < 3; i++){
-            free(tokens[i]);
-        }
-        free(tokens);
+        free_tokens(tokens, 3);
+
         if (!print){
             free(comm);
+            free(copy);
             return NULL;
         }
         comm->command.print = print;
     }
-    return comm;    
+    free(copy);
+    return comm;
 }
 
 #define MAX_REG (16)
@@ -185,6 +237,7 @@ static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
 
 static void print_help_comm(void){
     puts("Use 'n' or 'next' to go to the next command");
+    puts("please type <b> <MEMORY_LOCATION> to add a breakpoint");
     puts("Or print <FORMAT> <LOCATION><NUMBER> to print the state");
     printf("Where the format can be 'BIN' or 'HEX' or 'DEC', location can");
     puts(" be 'R' for registers, 'M' for memory and the number must be a positive integer");
@@ -203,8 +256,11 @@ static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
             puts("Stepping to next command");
             break;
         case EXIT_CMD:
-            puts("Exitting the program");
+            puts("Exiting the program");
             return true;
+        case BREAK_CMD:
+            puts("adding breakpoint");
+            break;
         case PRINT_CMD:
             execute_print_comm(comm->command.print, cpu_state); 
             break; 
@@ -213,17 +269,17 @@ static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
 }
 
 
-bool get_input_and_execute(CpuState *cpu_state){
+bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht){
     char input[MAX_COMMAND_LEN];
     printf(PROMPT_TXT);
     fgets(input, MAX_COMMAND_LEN, stdin);
 
     // gets rid of the trailing \n
     input[strlen(input)- 1] = '\0';
-    ExecutableCommand *comm = parse(input);
+    ExecutableCommand *comm = parse(input, ht);
     if (comm == NULL){
         puts("You gave me a wrong command. Type 'help' if you don't know the commands'");
-        return get_input_and_execute(cpu_state);
+        return get_input_and_execute(cpu_state, is_stepping, ht);
     }
     bool ending = execute_command(comm, cpu_state);
     if (!ending && comm->type != NEXT_CMD && comm->type != RUN_CMD) {
@@ -231,7 +287,10 @@ bool get_input_and_execute(CpuState *cpu_state){
             free(comm->command.print);
         }
         free(comm);
-        return get_input_and_execute(cpu_state);
+        return get_input_and_execute(cpu_state, is_stepping, ht);
+    }
+    if (comm->type == RUN_CMD){
+        *is_stepping = false;
     }
     if (ending){
         free(comm);
