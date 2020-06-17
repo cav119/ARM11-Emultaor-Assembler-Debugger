@@ -107,8 +107,7 @@ bool is_post_indexed_address(char *tokens[]) {
     // check that: [rX], or [rXX], are the first letters of the expression
     char *token = tokens[2];
     if (token[0] == '[' && token[1] == 'r') {
-        return (token[3] == ']' && token[4] == ',' && token[5] != '\0') ||
-            (token[4] == ']' && token[5] == ',' && token[6] != '\0');
+        return (token[3] == ']' && tokens[3]) || (token[4] == ']' && tokens[3]);
     }
     return false;
 }
@@ -159,7 +158,13 @@ void set_pre_indexed_address_bits(char *tokens[], uint32_t *bin_code) {
 
     // If expression is not empty
     if (expr_str != NULL) {
-        offset = get_numeric_offset(expr_str);
+        // check if numeric offset or register offset
+        if (expr_str[0] == 'r') {
+            offset = read_reg_num(expr_str);
+            *bin_code |= 1 << 25;   // flag as immediate offset
+        } else {
+            offset = get_numeric_offset(expr_str);
+        }
     }
 
     if (offset < 0) {
@@ -176,13 +181,20 @@ void set_pre_indexed_address_bits(char *tokens[], uint32_t *bin_code) {
 // Sets the bits if post-indexed
 void set_post_indexed_address_bits(char *tokens[], uint32_t *bin_code) {
     char *base_reg_str = tokens[2];
-    char *offset_str = tokens[3];
+    char *expr_str = tokens[3];
     
-    // get offset
-    uint32_t offset = get_numeric_offset(offset_str);
+    uint32_t offset = 0;
 
-    // get Rn value
+    // get base register Rn
     uint16_t base_reg = get_base_reg_indexed(base_reg_str);
+
+    // check if the offset is a register or numeric
+    if (expr_str[0] == 'r') {
+        offset = read_reg_num(expr_str);
+        *bin_code |= 1 << 25;   // flag as immediate offset
+    } else {
+        offset = get_numeric_offset(expr_str);
+    }
     
     *bin_code |= base_reg << 16;    // shift to bit 19-16
     *bin_code |= offset;            // set to bits 11-0
@@ -223,6 +235,10 @@ bool set_address_bits(char *tokens[], uint32_t *bin_code, uint32_t curr_instr_ad
         list_append(pending_offset_instr_addrs, index);
         
         return true;
+    }
+
+    for (int i =0; tokens[i]; i++) {
+        printf("tokens[%d] = '%s'\n", i, tokens[i]);
     }
 
     // Handle pre/post indexing addresses
