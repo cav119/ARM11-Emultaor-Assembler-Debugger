@@ -138,7 +138,6 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
         comm->type = EXIT_CMD;
     }
     else if (same_str(strtok(copy, " "), BREAK_CMD_S) || same_str(strtok(copy, " "), BREAK_CMD_L)) {
-        free(copy);
         comm->type = BREAK_CMD;
         char **tokens = tokenize_instr(input, 2);
         if(ht == NULL){
@@ -146,28 +145,33 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
             perror("null table");
             free(comm);
             free_tokens(tokens, 2);
+            free(copy);
             return NULL;
         }
         if(tokens == NULL){
             //invalid break
             free(comm);
+            free(copy);
             return NULL;
         }
         if (!only_numbers_str(tokens[1])){
             //not a number
             free(comm);
             free_tokens(tokens, 2);
+            free(copy);
             return NULL;
         }
         uint32_t *break_cmd = malloc(sizeof(uint32_t));
         *break_cmd = atoi(tokens[1]);
         if (*break_cmd % 4 != 0){
-            puts("the memory address must be a multiple of 4 due to the 32 bit system nature");
+            puts("The memory address must be a multiple of 4 due to the 32 bit system nature\n");
             free(comm);
+            free(break_cmd);
             free_tokens(tokens, 2);
+            free(copy);
             return NULL;
         }
-        bool *is_active = malloc(sizeof(bool *));
+        bool *is_active = malloc(sizeof(bool));
         *is_active = true;
         ht_set(ht, break_cmd, is_active, sizeof(uint32_t) / sizeof(char));
         free_tokens(tokens, 2);
@@ -179,6 +183,7 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
         if (tokens == NULL){
             // invalid instruction
             free(comm);
+            free(copy);
             return NULL;
         }
         PrintCommand *print = tokens_to_print_comm(tokens);
@@ -186,11 +191,13 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
 
         if (!print){
             free(comm);
+            free(copy);
             return NULL;
         }
         comm->command.print = print;
     }
-    return comm;    
+    free(copy);
+    return comm;
 }
 
 #define MAX_REG (16)

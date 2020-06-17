@@ -135,16 +135,18 @@ static void free_pipe(Pipe *pipe){
 
 // Internal helper recursive function for the pipeline execution, makes the code
 // cleaner and as efficient using gcc's tail call optimisation
-static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension, bool is_stepping, HashTable *breakpoint_map) {
+static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension, bool *is_stepping, HashTable *breakpoint_map) {
     if (pipe->fetching) {
         pipe->executing = pipe->decoding;
         pipe->decoding = decode_instruction(pipe->fetching);
-        check_breakpoints(cpu_state, is_extension, &is_stepping, breakpoint_map);
+        check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map);
         bool branch_instr_succeeded = false;
-        if (is_extension && is_stepping && get_input_and_execute(cpu_state, &is_stepping, breakpoint_map)){
+        if (is_extension && *is_stepping && get_input_and_execute(cpu_state, is_stepping, breakpoint_map)){
             // must have hit the exit command
             // need to free pipe before aborting
             free_pipe(pipe);
+            ht_free(breakpoint_map);
+            free(is_stepping);
             return;
         }
         if (pipe->executing) {
@@ -163,7 +165,7 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         // Ask user for input
         start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, breakpoint_map);
     } else {
-        bool ended = end_pipeline(pipe, cpu_state, is_extension, &is_stepping, breakpoint_map);
+        bool ended = end_pipeline(pipe, cpu_state, is_extension, is_stepping, breakpoint_map);
         if (!ended) {
             start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, breakpoint_map);
         }
@@ -195,7 +197,6 @@ void start_pipeline(CpuState *cpu_state, bool is_extension) {
     if(is_extension){
         puts("please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
         fflush(stdin);
-        //get_input_and_execute(cpu_state, is_stepping, breakpoint_map);
     }
    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, is_stepping, breakpoint_map);
 }
@@ -210,6 +211,8 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
         check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map);
         if (is_extension && *is_stepping && get_input_and_execute(cpu_state, is_stepping, breakpoint_map)) {
             free_pipe(pipe);
+            ht_free(breakpoint_map);
+            free(is_stepping);
             return true;
         }
         instruction_type type = pipe->executing->type;
@@ -227,6 +230,8 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
             check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map);
             if (is_extension && *is_stepping && get_input_and_execute(cpu_state, is_stepping, breakpoint_map)) {
                free_pipe(pipe);
+               ht_free(breakpoint_map);
+               free(is_stepping);
                return true;
             }
             instruction_type type = pipe->decoding->type;
@@ -243,6 +248,7 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
   // free(is_stepping);
   //free(is_extension);
     ht_free(breakpoint_map);
+    free(is_stepping);
 
     return true;
 }
