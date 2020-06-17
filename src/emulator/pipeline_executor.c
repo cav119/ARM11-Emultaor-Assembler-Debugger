@@ -109,17 +109,21 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
     return true;
 }
 
+#define PIPE_LAG (8)
 // Internal helper recursive function for the pipeline execution, makes the code
 // cleaner and as efficient using gcc's tail call optimisation
-static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool *is_extension, bool is_stepping, HashTable *ht) {
+static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension, bool is_stepping, HashTable *ht) {
     if (pipe->fetching) {
         pipe->executing = pipe->decoding;
         pipe->decoding = decode_instruction(pipe->fetching);
         if(is_extension){
-            if (ht_get(ht,&cpu_state->registers[PC], sizeof(uint32_t) / sizeof(char))){
-                printf("reached breakpoint at address %d",cpu_state->registers[PC]);
+            int *current_line = malloc(sizeof(int));
+            *current_line = cpu_state->registers[PC] - PIPE_LAG;
+            if (ht_get(ht,current_line, sizeof(uint32_t) / sizeof(char))){
+                printf("reached breakpoint at line 0x%.8x", *current_line);
                 is_stepping = true;
             }
+            free(current_line);
         }
 
         bool branch_instr_succeeded = false;
@@ -167,7 +171,8 @@ static int compare_address(const void *b1, const void *b2){
     if (!break_1 || !break_2){
         perror("null breakpoints");
         exit(EXIT_FAILURE);
-    } else if (break_1 > break_2){
+    }
+    if (break_1 > break_2){
         compare = 1;
     } else if (break_1 < break_2){
         compare = -1;
@@ -178,19 +183,20 @@ static int compare_address(const void *b1, const void *b2){
 }
 
 
-void start_pipeline(CpuState *cpu_state, bool *is_extension) {
+void start_pipeline(CpuState *cpu_state, bool is_extension) {
     HashTable  *hash_table = ht_create(compare_address);
-    bool *is_stepping = malloc(sizeof(bool *));
+    bool *is_stepping = malloc(sizeof(bool));
     *is_stepping = true;
     if(is_extension){
         puts("please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
+        fflush(stdin);
         //get_input_and_execute(cpu_state, is_stepping, hash_table);
     }
    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, is_stepping, hash_table);
 }
 
 
-bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool *is_extension, bool *is_stepping, HashTable *hash_table) {
+bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_stepping, HashTable *hash_table) {
     // Must have fetched a halt
     // since it stops when fetching a halt the block of code simulates executing 2 cycles
     // first executing pipe->executing, and then pipe->decoding

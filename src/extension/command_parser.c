@@ -153,34 +153,14 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
             free(comm);
             return NULL;
         }
-        if(!tokens[0] || !tokens[1]){
-            //not 2 tokens
-            perror("one of the tokens are null");
-            free(comm);
-            free_tokens(tokens, 2);
-            return NULL;
-        }
-        if(!same_str(tokens[0], BREAK_CMD_S) && !same_str(tokens[0], BREAK_CMD_L)){
-            //not break or b
-            perror("the command is not a breakpoint command");
-            free(comm);
-            free_tokens(tokens, 2);
-            return NULL;
-        }
         if (!only_numbers_str(tokens[1])){
             //not a number
             free(comm);
             free_tokens(tokens, 2);
             return NULL;
         }
-        uint32_t *break_cmd = malloc(sizeof(uint32_t *));
+        uint32_t *break_cmd = malloc(sizeof(uint32_t));
         *break_cmd = atoi(tokens[1]);
-        if(!*break_cmd){
-            //not a number
-            free(comm);
-            free_tokens(tokens, 2);
-            return NULL;
-        }
         if (*break_cmd % 4 != 0){
             puts("the memory address must be a multiple of 4 due to the 32 bit system nature");
             free(comm);
