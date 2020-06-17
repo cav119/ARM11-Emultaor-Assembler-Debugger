@@ -123,6 +123,16 @@ static void check_breakpoints(CpuState *cpu_state, bool is_extension, bool *is_s
     }
 }
 
+static void free_pipe(Pipe *pipe){
+    if (pipe->executing){
+        free(pipe->executing);
+    }
+    if (pipe->decoding){
+        free(pipe->decoding);
+    }
+    free(pipe);
+}
+
 // Internal helper recursive function for the pipeline execution, makes the code
 // cleaner and as efficient using gcc's tail call optimisation
 static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension, bool is_stepping, HashTable *breakpoint_map) {
@@ -134,13 +144,7 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         if (is_extension && is_stepping && get_input_and_execute(cpu_state, &is_stepping, breakpoint_map)){
             // must have hit the exit command
             // need to free pipe before aborting
-            if (pipe->executing){
-                free(pipe->executing);
-            }
-            if (pipe->decoding){
-                free(pipe->decoding);
-            }
-            free(pipe);
+            free_pipe(pipe);
             return;
         }
         if (pipe->executing) {
@@ -203,6 +207,11 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
     // first executing pipe->executing, and then pipe->decoding
     if (pipe->executing != NULL) {
         // fetched a HALT, must execute executing and then decoding
+        check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map);
+        if (is_extension && *is_stepping && get_input_and_execute(cpu_state, is_stepping, breakpoint_map)) {
+            free_pipe(pipe);
+            return true;
+        }
         instruction_type type = pipe->executing->type;
         bool succeeded = execute(pipe->executing, cpu_state, pipe);
         if (type == BRANCH && succeeded) {
@@ -216,6 +225,10 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
     } else {
         if (pipe->decoding != NULL) {
             check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map);
+            if (is_extension && *is_stepping && get_input_and_execute(cpu_state, is_stepping, breakpoint_map)) {
+               free_pipe(pipe);
+               return true;
+            }
             instruction_type type = pipe->decoding->type;
             bool succeeded = execute(pipe->decoding, cpu_state, pipe);
             if (type == BRANCH && succeeded) {
