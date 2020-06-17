@@ -4,15 +4,17 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "asm_utilities.h"
+
+
 //Private helper function declarations:
-uint16_t compute_operand_2(const char *expression[], uint8_t *i_bit, uint8_t size); 
-uint16_t compute_imm_expression(const char *expression); 
-uint16_t compute_operand_2_shift(const char *expression[]);
-uint8_t get_data_proc_opcode(char *op);
-uint16_t read_reg_num(char *reg);
-uint32_t rotate_left(uint32_t operand, uint32_t rotate_amt);
-uint8_t get_shift_opcode(char *op);
-uint32_t read_imm_val(const char *expression);
+static uint16_t compute_operand_2(const char *expression[], uint8_t *i_bit, uint8_t size); 
+static uint16_t compute_imm_expression(const char *expression); 
+static uint16_t compute_operand_2_shift(const char *expression[]);
+static uint8_t get_data_proc_opcode(char *op);
+static uint32_t rotate_left(uint32_t operand, uint32_t rotate_amt);
+static uint8_t get_shift_opcode(char *op);
+static uint32_t read_imm_val(const char *expression);
 
 /*Takes in the data proc instruction as an array of strings (split up)
 Size is the number of tokens in instr[] (needed for optional shift
@@ -20,10 +22,12 @@ register scenario) - set size to 3 to skip the shift register option
 Returns corresponding binary instruction in big endian format*/
 AsmInstruction *encode_dp_instr_to_binary(char *instr[], uint8_t size, long *instr_line) {
     assert(size >= 3);
+
     AsmInstruction *inst = calloc(1, sizeof(AsmInstruction));
     uint32_t *code = malloc(sizeof(uint32_t));
     inst->instr_line = *instr_line;
     inst->code = code;
+
     //Check for special instruction "andeq r0, r0, r0" (halt instruction)
     if (strcmp(instr[0], "andeq") == 0
         && strcmp(instr[1], "r0") == 0
@@ -35,9 +39,10 @@ AsmInstruction *encode_dp_instr_to_binary(char *instr[], uint8_t size, long *ins
 
     //Special instruction "lsl Rn, <#expression>" - manually changes instr
     if (strcmp(instr[0], "lsl") == 0) {
-        char *new_instr[] = {"mov", instr[1], instr[1], "lsl", instr[2]};
-        instr = new_instr;
-        size = 5;
+        char *new_instr[] = {"mov", instr[1], instr[1], "lsl", instr[2], NULL};
+        free(code);
+        free(inst);
+        return encode_dp_instr_to_binary(new_instr, 5, instr_line);
     }
 
     //instruction parts
@@ -151,7 +156,7 @@ uint8_t get_shift_opcode(char *op) {
     } else if (strcmp(op, "ror") == 0) {
         return 3;
     } else {
-        printf("Error: Supplied shift op string is unidentifiable.");
+        perror("Error: Supplied shift op string is unidentifiable.\n");
         exit(EXIT_FAILURE);
     }
     return 0;
@@ -180,19 +185,12 @@ uint8_t get_data_proc_opcode(char *op) {
     } else if (strcmp(op, "mov") == 0) {
         return 13;
     } else {
-        printf("Error: Supplied data proc op string is unidentifiable.");
+        perror("Error: Supplied data proc op string is unidentifiable.\n");
         exit(EXIT_FAILURE);
     }
     return 0;
 }
 
-//read_reg_num is temporary function using read_red_num from assemble.c
-uint16_t read_reg_num(char *reg) {
-    if (reg == 0) {
-        return 0;
-    }
-    return atoi(strtok(reg, "r"));
-}
 
 //Rotates left operand by rotate_amt
 uint32_t rotate_left(uint32_t operand, uint32_t rotate_amt) {

@@ -35,4 +35,5 @@ void arrlist_destroy(ArrayList *list);
 // Destroys the arraylist and frees the elements inside the array with given
 // free function
 void arrlist_destroy_free(ArrayList *list, void (*free_fun)(void *));
+
 #endif

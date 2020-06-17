@@ -14,8 +14,16 @@ static bool valid_index(ArrayList *list, int index){
 
 ArrayList *arrlist_init(void){
     ArrayList *list = calloc(1, sizeof(ArrayList));
+    if (!list) {
+        perror("Error allocating memory for array list");
+        exit(EXIT_FAILURE);
+    }
     list->max_size = INIT_SIZE;
     list->elements = calloc(INIT_SIZE, sizeof(element));
+    if (!list->elements) {
+        perror("Error allocating memory for elements in array list");
+        exit(EXIT_FAILURE);
+    }
     return list; 
 }
 
@@ -27,6 +35,10 @@ void arrlist_append(ArrayList *list, void *elem) {
     if (list->size == list->max_size){
         list->max_size *= SIZE_MULTIPLIER;
         list->elements = realloc(list->elements, list->max_size * sizeof(element));
+        if (!list->elements) {
+            perror("Error reallocating memory for list's elements");
+            exit(EXIT_FAILURE);
+        }
         list->elements[list->size] = elem;
         list->size += 1;
         return;

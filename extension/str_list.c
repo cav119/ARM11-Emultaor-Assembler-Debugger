@@ -1,24 +1,18 @@
-#include "list.h"
+#include "str_list.h"
 
-#include <stdio.h>
 
 List *create_list(void){
-    List *list = calloc(1, sizeof(List));
-    if (!list) {
-        perror("Error allocating memory for list");
-        exit(EXIT_FAILURE);
-    }
-    return list;
+    return calloc(1, sizeof(List));
 }
 
-void *list_get_head(List *list){
+char *list_get_head(List *list){
     if (!list->head){
         return NULL;
     }
     return list->head->elem;
 }
 
-void *list_get_last(List *list){
+char *list_get_last(List *list){
     if (!list->tail){
         return list_get_head(list);
     }
@@ -42,7 +36,7 @@ void list_del_head(List *list, void (*free_fun)(void *)){
     }
 }
 
-void *list_get(List *list, void *key, int (*comp)(const void *, const  void *)){
+char *list_get(List *list, char *key, int (*comp)(const char *, const  char *)){
     ListNode *curr;
     for (curr = list->head; curr; curr = curr->next){
         if (comp(curr->elem, key) == 0){
@@ -62,15 +56,16 @@ void list_del_last(List *list, void (*free_fun)(void *)){
             list->head = NULL;
         }
         else {
-            // empty list
             return;
         }
     }
+
     list->size -= 1;
     ListNode *last = list->tail;
     ListNode *new_last= last->prev;
     free_fun(last->elem);
     free(last);
+
     // if there are only two nodes in the list, make tail NULL
     if (new_last == list->head){
         list->tail = NULL;
@@ -84,7 +79,7 @@ bool index_ok(List *list, int index){
     return index >= 0 && index < list->size;
 }
 
-void *list_get_index(List *list, int index){
+char *list_get_index(List *list, int index){
     if (!index_ok(list, index)){
       return NULL;  
     }
@@ -96,15 +91,10 @@ void *list_get_index(List *list, int index){
 
 // Returns a new node with NULL fields
 static ListNode* node_alloc(void){
-    ListNode *node = calloc(1, sizeof(ListNode));
-    if (!node) {
-        perror("Error allocating memory for list node");
-        exit(EXIT_FAILURE);
-    }
-    return node;
+    return calloc(1, sizeof(ListNode));
 }
 
-void list_append(List *list, void *elem){
+void list_append(List *list, char *elem){
    ListNode* node = node_alloc();
    node->elem = elem;
    // Empty list
@@ -130,7 +120,7 @@ void list_append(List *list, void *elem){
 
 
 
-bool delete_by_key(List *list, void *key, int (*comp)(const void *, const  void *), 
+bool delete_by_key(List *list, char *key, int (*comp)(const char *, const  char *), 
                     void (*free_fun)(void *)){
     ListNode *curr;
     for (curr = list->head; curr; curr = curr->next){
