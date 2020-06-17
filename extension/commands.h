@@ -15,8 +15,8 @@
 #define BREAK_CMD_L ("break")
 #define PRINT_CMD_S ("p")
 #define PRINT_CMD_L ("print")
-#define EXIT_CMD_L ("exit")
-#define EXIT_CMD_S ("ex")
+#define EXIT_CMD_L ("quit")
+#define EXIT_CMD_S ("q")
 #define HELP_CMD_L ("help")
 
 // print command examples:

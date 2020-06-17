@@ -4,9 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define REGS_WIN_HEIGHT 10
-#define MIDDLE_WINS_HEIGHT 14
-#define INPUT_WIN_HEIGHT 3
 
 static RegistersWin *init_regs_win(uint32_t *regs, int width) {
     RegistersWin *regs_win = malloc(sizeof(RegistersWin));
@@ -61,10 +58,19 @@ static HelpWin *init_help_win(int width, int regs_win_height) {
     wattron(help_win, A_BOLD);
     mvwprintw(help_win, 1, help_win->_maxx / 2 - strlen("--- COMMANDS ---") / 2, "--- COMMANDS ---");
     wattroff(help_win, A_BOLD);
-    mvwprintw(help_win, 3, 1, "Run program:      %s | %s", RUN_CMD_S, RUN_CMD_L);
-    mvwprintw(help_win, 4, 1, "Next instruction: %s | %s", NEXT_CMD_S, NEXT_CMD_L);
-    mvwprintw(help_win, 5, 1, "Set breakpoint:   %s | %s", BREAK_CMD_S, BREAK_CMD_L);
-    mvwprintw(help_win, 6, 1, "Print memory:     %s | %s", PRINT_CMD_S, PRINT_CMD_L);
+    mvwprintw(help_win, 3, 1, "Run program:      %s", RUN_CMD_L);
+    mvwprintw(help_win, 4, 1, "Next instruction: %s", NEXT_CMD_L);
+    mvwprintw(help_win, 5, 1, "Set breakpoint:   %s <line>", BREAK_CMD_L);
+    mvwprintw(help_win, 6, 1, "Print data:       %s <base> <{M/R}val>", PRINT_CMD_L);
+    wattron(help_win, A_ITALIC);
+    mvwprintw(help_win, 7, 1, "\tExample usage: p HEX R3");
+    wattroff(help_win, A_ITALIC);
+    
+    mvwprintw(help_win, 8, 1, "Exit debugger:    %s", EXIT_CMD_L);
+
+    mvwprintw(help_win, help_win->_maxy - 2, 1, 
+        "All commands can be executed using their\n initial, ie: 'r' or 'run' are equivalent.");
+    
     box(help_win, 0, 0);
     
     hw->win = help_win;
@@ -84,7 +90,6 @@ static OutputWin *init_out_win(int width, int height, int mem_win_height) {
         exit(EXIT_FAILURE);
     }
 
-    mvwprintw(out_win->win, 1, 1, "Started ARM11 Debugger... Enter 'run' or 'r' to start debugging.");
     box(out_win->win, 0, 0);
 
     return out_win;
@@ -172,10 +177,10 @@ void update_registers(RegistersWin *regs_win, uint32_t *registers) {
         if (i == 13 || i == 14) {
             continue;
         }
-        if (i == 15) {
+        if (i == PC) {
             mvwprintw(regs_win->win, i + 1 - height, width / 2 - 1, 
                 "PC   = 0x%.8x", registers[i]);
-        } else if (i == 16) {
+        } else if (i == CPSR) {
             mvwprintw(regs_win->win, i + 1 - height, width / 2 - 1, 
                 "CPSR = 0x%.8x", registers[i]);
         } else {
@@ -198,9 +203,9 @@ void update_memory_map_by_word(MemoryWin *mem_win, uint8_t *memory, uint32_t add
     if (((int32_t) addr_rounded) - (midpoint + 1) * 4 < 0) {
         start = 0;
         stop = (MIDDLE_WINS_HEIGHT - 2) * 4;
-    } else if (((int32_t) addr_rounded) + (midpoint + 1) * 4 > 1000) {
-        start = 1000 - (MIDDLE_WINS_HEIGHT - 3) * 4;
-        stop = 1000 - 4;
+    } else if (((int32_t) addr_rounded) + (midpoint + 1) * 4 > MEMORY_SIZE) {
+        start = MEMORY_SIZE - (MIDDLE_WINS_HEIGHT - 3) * 4;
+        stop = MEMORY_SIZE - 4;
     } else {
         start = addr_rounded - midpoint * 4;
         stop = addr_rounded + (midpoint + 2) * 4;
@@ -215,10 +220,10 @@ void update_memory_map_by_word(MemoryWin *mem_win, uint8_t *memory, uint32_t add
 
     int addr = start;
     for (int i = start; i < stop; i++) {
-        if (addr >= 1000 || addr < 0) {   // extra safety check
+        if (addr >= MEMORY_SIZE || addr < 0) {   // extra safety check
             break;
         }
-        if (addr_rounded == addr) {
+        if (addr_rounded == addr && address != 0) {
             wattron(mem_win->win, A_REVERSE);
             mvwprintw(mem_win->win, i + 2 - start, 1, "-> M[ 0x%.8x ] = 0x%.2x  0x%.2x  0x%.2x  0x%.2x",
                 addr, memory[addr], memory[addr + 1], memory[addr + 2], memory[addr + 3]);
@@ -234,38 +239,6 @@ void update_memory_map_by_word(MemoryWin *mem_win, uint8_t *memory, uint32_t add
     wrefresh(mem_win->win);
 }
 
-
-void update_memory_map_by_byte(MemoryWin *mem_win, uint8_t *memory, uint32_t address) {
-    int midpoint = (MIDDLE_WINS_HEIGHT - 2) / 2;
-    // replace for total memory size
-    wclear(mem_win->win);
-
-    // Check edge cases
-    int start, stop;
-    if (((int32_t) address) - midpoint + 1 < 0) {
-        start = 0;
-        stop = MIDDLE_WINS_HEIGHT - 2;
-    } else if (((int32_t) address) + midpoint + 1 > 1000) {
-        start = 1000 - (MIDDLE_WINS_HEIGHT - 2);
-        stop = 1000;
-    } else {
-        start = address - midpoint + 1;
-        stop = address + midpoint + 1;
-    }
-
-    for (int i = start; i < stop; i++) {
-        if (address == i) {
-            wattron(mem_win->win, A_REVERSE);
-            mvwprintw(mem_win->win, i + 1 - start, 1, "-> M[0x%.8x] = 0x%.2x ", i, memory[i]);
-            wattroff(mem_win->win, A_REVERSE);
-        } else {
-            mvwprintw(mem_win->win, i + 1 - start, 1, "   M[0x%.8x] = 0x%.2x ", i, memory[i]);
-        }
-    }
-
-    box(mem_win->win, 0, 0);
-    wrefresh(mem_win->win);
-}
 
 
 /************ OUPUT WINDOW FUNCTIONS ************/

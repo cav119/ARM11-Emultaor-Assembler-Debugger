@@ -1,10 +1,21 @@
-
-
 #include "command_parser.h"
 #include "../src/emulator/pipeline_executor.h"
-#include "../src/assembler/hash_table.h"
-#include "extension_utilities.h"
 
+static char *print_bits_32(uint32_t bits) {
+    char *bit_str = calloc(33, sizeof(char));
+    uint32_t mask = 1 << 31;
+    for (int i = 0; i < 32; i++){
+        if (mask & bits) {
+            bit_str[i] = '1';
+        }
+        else {
+            bit_str[i] = '0';
+        }
+        bits <<= 1;
+    }
+    bit_str[32] = '\0';
+    return bit_str;
+}
 
 
 static bool same_str(char *str1, char *str2){
@@ -36,7 +47,6 @@ static void free_tokens(char **tokens, int length){
 }
 
 static char **tokenize_instr(char *instr, int args){
-
     char **tokens = calloc(args, sizeof(char) * MAX_COMMAND_LEN);
     int curr = 0;
     char *tok = strtok(instr, " ");
@@ -52,6 +62,7 @@ static char **tokenize_instr(char *instr, int args){
         free(tokens);
         return NULL;
     }
+
     return tokens;
 }
 
@@ -64,6 +75,7 @@ static bool only_numbers_str(char *str){
             return false;
         }
     }
+    
     return true;
 }
 
@@ -208,7 +220,7 @@ static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state, MainWin 
     }
     uint32_t target;
     if (comm->is_register_print){
-        if ( ! (comm->print_target <= MAX_REG) ){
+        if (!(comm->print_target <= MAX_REG)){
             print_to_output(win->out_win, "Invalid register number");
             wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
             return;
@@ -217,85 +229,81 @@ static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state, MainWin 
     }
     else {
         // print little endian memory
-        if ( ! (comm->print_target <= MAX_MEMORY) || (comm->print_target % 4 != 0) ){
+        if (!(comm->print_target <= MAX_MEMORY) || (comm->print_target % 4 != 0)){
             print_to_output(win->out_win, "Invalid memory address");
             wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
             return;
         }
         target = fetch_big_endian(comm->print_target, cpu_state);
     }
+   
     if (comm->format == BIN){
-        //commbits_32(target);
-        char *bits = print_bits_32(target);
-        print_to_output(win->out_win, bits);
+        char *bit_str = print_bits_32(target);
+        print_to_output(win->out_win, bit_str);
+        wrefresh(win->out_win->win);
         wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
-    }
-    else if (comm->format == HEX) {
+        free(bit_str);
+    } else if (comm->format == HEX) {
         char *msg = malloc(sizeof(char) * win->out_win->win->_maxx - 3);
-        sprintf(msg, "$: 0x%0.8x", target);
+        sprintf(msg, "$: 0x%.8x", target);
         print_to_output(win->out_win, msg);
         wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
-        // printf("$: 0x%0.8x\n", target);
-    }
-    else {
+        free(msg);
+    } else {
         char *msg = malloc(sizeof(char) * win->out_win->win->_maxx - 3);
         sprintf(msg, "$: %d", target);
         print_to_output(win->out_win, msg);
         wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
+        free(msg);
     }
 }
 
-static void print_help_comm(void){
-    puts("Use 'n' or 'next' to go to the next command");
-    puts("please type <b> <MEMORY_LOCATION> to add a breakpoint");
-    puts("Or print <FORMAT> <LOCATION><NUMBER> to print the state");
-    printf("Where the format can be 'BIN' or 'HEX' or 'DEC', location can");
-    puts(" be 'R' for registers, 'M' for memory and the number must be a positive integer");
-    puts("Also, you can also use 'print' instead of 'p' for printing");
-}
+// static void print_help_comm(void) {
+//     puts("Use 'n' or 'next' to go to the next command");
+//     puts("please type <b> <MEMORY_LOCATION> to add a breakpoint");
+//     puts("Or print <FORMAT> <LOCATION><NUMBER> to print the state");
+//     printf("Where the format can be 'BIN' or 'HEX' or 'DEC', location can");
+//     puts(" be 'R' for registers, 'M' for memory and the number must be a positive integer");
+//     puts("Also, you can also use 'print' instead of 'p' for printing");
+// }
 
-static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state, MainWin *win){
+static bool execute_command(char *input, ExecutableCommand *comm, CpuState *cpu_state, MainWin *win){
     switch (comm->type)  {
         case HELP_CMD:
-            print_help_comm();
+            print_to_output(win->out_win, "See all possible commands above");
             break;            
         case RUN_CMD:
-            // puts("Running code");
-            print_to_output(win->out_win, "Running code");
+            print_to_output(win->out_win, "Running the program...");
             break;
         case NEXT_CMD:
             print_to_output(win->out_win, "Stepping to the next instruction");
             break;
         case EXIT_CMD:
-            print_to_output(win->out_win, "Exitting the program");
+            print_to_output(win->out_win, "Exiting the program");
             return true;
         case BREAK_CMD:
-            print_to_output(win->out_win, "Adding breakpoint");
+            print_to_output(win->out_win, "Added breakpoint");
             break;
         case PRINT_CMD:
             execute_print_comm(comm->command.print, cpu_state, win); 
             break; 
     }
+    wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
     return false;
 }
 
 
-bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht, MainWin *win){
-    // char input[MAX_COMMAND_LEN];
-    // printf(PROMPT_TXT);
-    // fgets(input, MAX_COMMAND_LEN, stdin);
-    get_user_input(win->inp_win); 
-    char *input = win->inp_win->input_str;
+bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht, MainWin *win) {
 
-    // gets rid of the trailing \n
-    input[strlen(input)- 1] = '\0';
-    ExecutableCommand *comm = parse(input, ht);
+    get_user_input(win->inp_win); // get the user input from the gui
+
+    ExecutableCommand *comm = parse(win->inp_win->input_str, ht);
     if (comm == NULL){
-        print_to_output(win->out_win, "You gave me a wrong command. Type 'help' if you don't know the commands'");
-        // puts("You gave me a wrong command. Type 'help' if you don't know the commands'");
+        print_to_output(win->out_win, "Invalid command, see the available commands above.");
+        wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
         return get_input_and_execute(cpu_state, is_stepping, ht, win);
     }
-    bool ending = execute_command(comm, cpu_state, win);
+    bool ending = execute_command(win->inp_win->input_str, comm, cpu_state, win);
     if (!ending && comm->type != NEXT_CMD && comm->type != RUN_CMD) {
         if (comm->command.print){
             free(comm->command.print);
@@ -303,10 +311,10 @@ bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht
         free(comm);
         return get_input_and_execute(cpu_state, is_stepping, ht, win);
     }
-    if (comm->type == RUN_CMD){
+    if (comm->type == RUN_CMD) {
         *is_stepping = false;
     }
-    if (ending){
+    if (ending) {
         free(comm);
         return true;
     }

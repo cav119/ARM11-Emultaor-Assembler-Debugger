@@ -24,7 +24,7 @@ uint32_t fetch_big_endian(uint32_t ptr, CpuState *cpu_state);
 Instruction *decode_instruction(uint32_t bits);
 
 // Executes the instruction in the pipeline given the instruction
-bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe);
+bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe, MainWin *win);
 
 // Starts the fetch-decode-execute process until finished
 void start_pipeline(CpuState *cpu_state, bool is_extenstion, MainWin *win);

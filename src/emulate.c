@@ -33,9 +33,10 @@ int main(int argc, char *argv[]) {
     
 
     // Start execution of program
-    start_pipeline(cpu_state, false);
+    // The 2nd and 3rd params indicate that the extension is not running
+    start_pipeline(cpu_state, false, NULL);
 
-    // Print state of program for testing
+    // Print state of program at the end
     print_registers(cpu_state);
     print_nonzero_big_endian_memory(cpu_state, MEMORY_SIZE);
 

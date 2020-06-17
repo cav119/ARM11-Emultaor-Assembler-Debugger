@@ -5,10 +5,12 @@
 #include "utilities.h"
 #include "pipeline_executor.h"
 #include "pipeline_data.h"
-// #include "../assembler/hash_table.h"
-// #include "../extension/command_parser.h"
+
 #include "../../extension/command_parser.h"
 #include "../../extension/gui.h"
+
+#define PIPE_LAG (8)
+
 
 // If running the extension, output this message to stdout
 #define EXTENSION_WRITE(is_ext, msg) \
@@ -82,11 +84,12 @@ Instruction *decode_instruction(uint32_t bits) {
 }
 
 
-bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
+bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe, MainWin *win) {
     if (!(check_CPSR_cond(process_mask(instruction->code, 28, 31), cpu_state))) {
         free(instruction);
         return false;
     }
+
     switch (instruction->type) {
         case DATA_PROCESS:
             execute_data_processing_instr(cpu_state, instruction);
@@ -111,14 +114,19 @@ bool execute(Instruction *instruction, CpuState *cpu_state, Pipe *pipe) {
     return true;
 }
 
-#define PIPE_LAG (8)
 
-static void check_breakpoints(CpuState *cpu_state, bool is_extension, bool *is_stepping, HashTable *breakpoint_map){
+static void check_breakpoints(CpuState *cpu_state, bool is_extension, bool *is_stepping, 
+    HashTable *breakpoint_map, MainWin *win) {
     if(is_extension){
         int *current_line = malloc(sizeof(int));
         *current_line = cpu_state->registers[PC] - PIPE_LAG;
-        if (ht_get(breakpoint_map,current_line, sizeof(uint32_t) / sizeof(char))){
-            printf("reached breakpoint at line 0x%.8x\n", *current_line);
+        
+        if (ht_get(breakpoint_map,current_line, sizeof(uint32_t) / sizeof(char))) {
+            char *msg = malloc(sizeof(char) * win->out_win->win->_maxx - 3);
+            sprintf(msg, "Hit breakpoint at address 0x%.8x\n", *current_line);
+            print_to_output(win->out_win, msg);
+            wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
+            
             *is_stepping = true;
         }
         free(current_line);
@@ -137,11 +145,12 @@ static void free_pipe(Pipe *pipe){
 
 // Internal helper recursive function for the pipeline execution, makes the code
 // cleaner and as efficient using gcc's tail call optimisation
-static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension, bool *is_stepping, HashTable *breakpoint_map, MainWin *win) {
+static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_extension, 
+    bool *is_stepping, HashTable *breakpoint_map, MainWin *win) {
     if (pipe->fetching) {
         pipe->executing = pipe->decoding;
         pipe->decoding = decode_instruction(pipe->fetching);
-        check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map);
+        check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map, win);
         bool branch_instr_succeeded = false;
         if (is_extension && *is_stepping && get_input_and_execute(cpu_state, is_stepping, breakpoint_map, win)){
             // must have hit the exit command
@@ -153,7 +162,7 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         }
         if (pipe->executing) {
             instruction_type type = pipe->executing->type;
-            bool succeeded = execute(pipe->executing,cpu_state, pipe);
+            bool succeeded = execute(pipe->executing,cpu_state, pipe, win);
             if (succeeded && type == BRANCH) {
                 branch_instr_succeeded = true;
             }
@@ -163,6 +172,12 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         if (!branch_instr_succeeded) {
             pipe->fetching = fetch(cpu_state->registers[PC], cpu_state);
             increment_pc(cpu_state);
+
+            if (is_extension) {
+                update_memory_map_by_word(win->memory_win, cpu_state->memory, cpu_state->registers[PC] - PIPE_LAG);
+                update_registers(win->regs_win, cpu_state->registers);
+                wrefresh(win->regs_win->win);
+            }
         }
         // Ask user for input
         start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, breakpoint_map, win);
@@ -170,14 +185,17 @@ static void start_pipeline_helper(CpuState *cpu_state, Pipe *pipe, bool is_exten
         bool ended = end_pipeline(pipe, cpu_state, is_extension, is_stepping, breakpoint_map, win);
         if (!ended) {
             start_pipeline_helper(cpu_state, pipe, is_extension, is_stepping, breakpoint_map, win);
+        } else if (is_extension) {
+            update_memory_map_by_word(win->memory_win, cpu_state->memory, cpu_state->registers[PC] - PIPE_LAG);
         }
     }
 }
+
 static int compare_address(const void *b1, const void *b2){
     uint32_t *break_1 = (uint32_t *) b1;
     uint32_t *break_2 = (uint32_t *) b2;
     int compare;
-    if (!break_1 || !break_2){
+    if (!break_1 || !break_2) {
         perror("null breakpoints");
         exit(EXIT_FAILURE);
     }
@@ -197,12 +215,11 @@ void start_pipeline(CpuState *cpu_state, bool is_extension, MainWin *win) {
     bool *is_stepping = malloc(sizeof(bool));
     *is_stepping = true;
     if(is_extension) {
-        print_to_output(win->out_win, "please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
+        print_to_output(win->out_win, "Loaded program. Type 'r' or 'run' to start the execution.");
+        update_memory_map_by_word(win->memory_win, cpu_state->memory, 0);
         wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
-        // puts("please type <b> <MEMORY_LOCATION> to add a breakpoint and/or type r to run");
-        // fflush(stdin);
     }
-   start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, is_stepping, breakpoint_map, win);
+    start_pipeline_helper(cpu_state, init_pipeline(cpu_state), is_extension, is_stepping, breakpoint_map, win);
 }
 
 
@@ -212,7 +229,7 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
     // first executing pipe->executing, and then pipe->decoding
     if (pipe->executing != NULL) {
         // fetched a HALT, must execute executing and then decoding
-        check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map);
+        check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map, win);
         if (is_extension && *is_stepping && get_input_and_execute(cpu_state, is_stepping, breakpoint_map, win)) {
             free_pipe(pipe);
             ht_free(breakpoint_map);
@@ -220,7 +237,7 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
             return true;
         }
         instruction_type type = pipe->executing->type;
-        bool succeeded = execute(pipe->executing, cpu_state, pipe);
+        bool succeeded = execute(pipe->executing, cpu_state, pipe, win);
         if (type == BRANCH && succeeded) {
             return false;
         }
@@ -231,7 +248,7 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
         }
     } else {
         if (pipe->decoding != NULL) {
-            check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map);
+            check_breakpoints(cpu_state, is_extension, is_stepping, breakpoint_map, win);
             if (is_extension && *is_stepping && get_input_and_execute(cpu_state, is_stepping, breakpoint_map, win)) {
                free_pipe(pipe);
                ht_free(breakpoint_map);
@@ -239,7 +256,7 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
                return true;
             }
             instruction_type type = pipe->decoding->type;
-            bool succeeded = execute(pipe->decoding, cpu_state, pipe);
+            bool succeeded = execute(pipe->decoding, cpu_state, pipe, win);
             if (type == BRANCH && succeeded) {
                 return false;
             }
@@ -249,8 +266,6 @@ bool end_pipeline(Pipe *pipe, CpuState *cpu_state, bool is_extension, bool *is_s
 
     increment_pc(cpu_state);
     free(pipe);
-  // free(is_stepping);
-  //free(is_extension);
     ht_free(breakpoint_map);
     free(is_stepping);
 

@@ -2,20 +2,19 @@
 #define GUI_H_
 
 #include <ncurses.h>
-#include <curses.h>
+
 #include "str_list.h"
+#include "commands.h"
 
-#define PROMPT_TXT "> "
-#define PROMPT_SIZE 2
+#define MEMORY_SIZE 65536
+#define NUM_REGISTERS 17
+#define PC 15
+#define CPSR 16
+#define PC_LAG 8
 
-#define RUN_CMD_L "run"
-#define RUN_CMD_S "r"
-#define NEXT_CMD_L "next"
-#define NEXT_CMD_S "n"
-#define BREAK_CMD_S "b"
-#define BREAK_CMD_L "break"
-#define PRINT_CMD_S "p"
-#define PRINT_CMD_L "print"
+#define REGS_WIN_HEIGHT 10
+#define MIDDLE_WINS_HEIGHT 14
+#define INPUT_WIN_HEIGHT 3
 
 typedef struct {
     WINDOW *win;
@@ -66,9 +65,6 @@ void destroy_main_win(MainWin *win);
 void update_registers(RegistersWin *regs_win, uint32_t *registers);
 
 /*********** Memory window functions ***********/
-
-// Shows the memory map at the given address as a list of individual bytes
-void update_memory_map_by_byte(MemoryWin *mem_win, uint8_t *memory, uint32_t address);
 
 // Shows the memory map at a given address as a list of words (4 bytes)
 void update_memory_map_by_word(MemoryWin *mem_win, uint8_t *memory, uint32_t address);
