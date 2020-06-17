@@ -1,7 +1,8 @@
 
 
 #include "command_parser.h"
-#include "../emulator/pipeline_executor.h" 
+#include "../emulator/pipeline_executor.h"
+#include "../assembler/hash_table.h"
 #include "extension_utilities.h"
 
 
@@ -198,7 +199,6 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
         if (tokens == NULL){
             // invalid instruction
             free(comm);
-            free_tokens(tokens, 3);
             return NULL;
         }
         PrintCommand *print = tokens_to_print_comm(tokens);
