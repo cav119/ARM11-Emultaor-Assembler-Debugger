@@ -237,10 +237,6 @@ bool set_address_bits(char *tokens[], uint32_t *bin_code, uint32_t curr_instr_ad
         return true;
     }
 
-    for (int i =0; tokens[i]; i++) {
-        printf("tokens[%d] = '%s'\n", i, tokens[i]);
-    }
-
     // Handle pre/post indexing addresses
     if (is_post_indexed_address(tokens)) {
         set_post_indexed_address_bits(tokens, bin_code);
