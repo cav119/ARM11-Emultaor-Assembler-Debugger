@@ -2,6 +2,7 @@
 #define GUI_H_
 
 #include <ncurses.h>
+#include <curses.h>
 #include "str_list.h"
 
 #define PROMPT_TXT "> "

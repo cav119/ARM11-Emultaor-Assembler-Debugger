@@ -5,6 +5,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-void print_bits_32(uint32_t bits);
+char *print_bits_32(uint32_t bits);
 
 #endif

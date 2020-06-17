@@ -6,14 +6,15 @@
 #include <stdlib.h>
 
 #include "commands.h"
-#include "../emulator/cpu_state.h"
+#include "../src/emulator/cpu_state.h"
+#include "../src/assembler/hash_table.h"
+#include "gui.h"
 
-#include "../assembler/hash_table.h"
 
 #define MAX_COMMAND_LEN (100)
 
 // Gets input and executes a command, returns whether the user
 // hit the exit command that halts the "debugger"
-bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht);
+bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht, MainWin *win);
 
 #endif

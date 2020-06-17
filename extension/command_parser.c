@@ -1,10 +1,9 @@
 
 
 #include "command_parser.h"
-#include "../emulator/pipeline_executor.h"
-#include "../assembler/hash_table.h"
+#include "../src/emulator/pipeline_executor.h"
+#include "../src/assembler/hash_table.h"
 #include "extension_utilities.h"
-
 
 
 
@@ -203,14 +202,15 @@ static ExecutableCommand *parse(char *input,  HashTable *ht){
 #define MAX_REG (16)
 #define MAX_MEMORY (65532)
 
-static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
+static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state, MainWin *win){
     if (!comm){
         return;
     }
     uint32_t target;
     if (comm->is_register_print){
         if ( ! (comm->print_target <= MAX_REG) ){
-            printf("Invalid register number\n");
+            print_to_output(win->out_win, "Invalid register number");
+            wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
             return;
         }
         target = cpu_state->registers[comm->print_target];
@@ -218,20 +218,30 @@ static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state){
     else {
         // print little endian memory
         if ( ! (comm->print_target <= MAX_MEMORY) || (comm->print_target % 4 != 0) ){
-            printf("Invalid memory address\n");
+            print_to_output(win->out_win, "Invalid memory address");
+            wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
             return;
         }
         target = fetch_big_endian(comm->print_target, cpu_state);
     }
     if (comm->format == BIN){
         //commbits_32(target);
-        print_bits_32(target);
+        char *bits = print_bits_32(target);
+        print_to_output(win->out_win, bits);
+        wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
     }
     else if (comm->format == HEX) {
-        printf("$: 0x%0.8x\n", target);
+        char *msg = malloc(sizeof(char) * win->out_win->win->_maxx - 3);
+        sprintf(msg, "$: 0x%0.8x", target);
+        print_to_output(win->out_win, msg);
+        wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
+        // printf("$: 0x%0.8x\n", target);
     }
     else {
-        printf("$: %d\n", target);
+        char *msg = malloc(sizeof(char) * win->out_win->win->_maxx - 3);
+        sprintf(msg, "$: %d", target);
+        print_to_output(win->out_win, msg);
+        wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);
     }
 }
 
@@ -244,50 +254,54 @@ static void print_help_comm(void){
     puts("Also, you can also use 'print' instead of 'p' for printing");
 }
 
-static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state){
+static bool execute_command(ExecutableCommand *comm, CpuState *cpu_state, MainWin *win){
     switch (comm->type)  {
         case HELP_CMD:
             print_help_comm();
             break;            
         case RUN_CMD:
-            puts("Running code");
+            // puts("Running code");
+            print_to_output(win->out_win, "Running code");
             break;
         case NEXT_CMD:
-            puts("Stepping to next command");
+            print_to_output(win->out_win, "Stepping to the next instruction");
             break;
         case EXIT_CMD:
-            puts("Exiting the program");
+            print_to_output(win->out_win, "Exitting the program");
             return true;
         case BREAK_CMD:
-            puts("adding breakpoint");
+            print_to_output(win->out_win, "Adding breakpoint");
             break;
         case PRINT_CMD:
-            execute_print_comm(comm->command.print, cpu_state); 
+            execute_print_comm(comm->command.print, cpu_state, win); 
             break; 
     }
     return false;
 }
 
 
-bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht){
-    char input[MAX_COMMAND_LEN];
-    printf(PROMPT_TXT);
-    fgets(input, MAX_COMMAND_LEN, stdin);
+bool get_input_and_execute(CpuState *cpu_state, bool *is_stepping, HashTable *ht, MainWin *win){
+    // char input[MAX_COMMAND_LEN];
+    // printf(PROMPT_TXT);
+    // fgets(input, MAX_COMMAND_LEN, stdin);
+    get_user_input(win->inp_win); 
+    char *input = win->inp_win->input_str;
 
     // gets rid of the trailing \n
     input[strlen(input)- 1] = '\0';
     ExecutableCommand *comm = parse(input, ht);
     if (comm == NULL){
-        puts("You gave me a wrong command. Type 'help' if you don't know the commands'");
-        return get_input_and_execute(cpu_state, is_stepping, ht);
+        print_to_output(win->out_win, "You gave me a wrong command. Type 'help' if you don't know the commands'");
+        // puts("You gave me a wrong command. Type 'help' if you don't know the commands'");
+        return get_input_and_execute(cpu_state, is_stepping, ht, win);
     }
-    bool ending = execute_command(comm, cpu_state);
+    bool ending = execute_command(comm, cpu_state, win);
     if (!ending && comm->type != NEXT_CMD && comm->type != RUN_CMD) {
         if (comm->command.print){
             free(comm->command.print);
         }
         free(comm);
-        return get_input_and_execute(cpu_state, is_stepping, ht);
+        return get_input_and_execute(cpu_state, is_stepping, ht, win);
     }
     if (comm->type == RUN_CMD){
         *is_stepping = false;

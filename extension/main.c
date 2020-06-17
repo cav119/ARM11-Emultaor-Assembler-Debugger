@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <ncurses.h>
+#include <curses.h>
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
@@ -10,6 +11,11 @@
 #include <time.h>
 
 #include "gui.h"
+#include "command_parser.h"
+
+#include "../src/emulator/cpu_state.h"
+#include "../src/emulator/utilities.h"
+#include "../src/emulator/pipeline_executor.h"
 
 
 // Handle Ctrl+C smoothly
@@ -39,23 +45,52 @@ int main(int argc, char **argv) {
         memory[i] = rand() % 0xFF;
     }
 
+    assert(argc == 2);
+
+    // Open binary file and check if it was a valid path to file
+    FILE *prog_file = fopen(argv[1], "rb");               
+    check_ptr_not_null(prog_file, "Could not open file.");
+
+    // Initialise the CpuState
+    CpuState *cpu_state = cpu_state_init();
+
+    // Get file length by moving cursor to the end and return back to start
+    fseek(prog_file, 0, SEEK_END);                         
+    uint64_t file_length = ftell(prog_file);               
+    rewind(prog_file);                                     
+
+    // Load program data into CPU memory, assuming it fits and close file
+    assert(file_length <= MEMORY_SIZE);                    
+    size_t n = fread(cpu_state->memory, file_length, 1, prog_file); 
+    assert(n != 0);
+    fclose(prog_file);
+
+
+    // Print state of program for testing
+    // print_registers(cpu_state);
+    // print_nonzero_big_endian_memory(cpu_state, MEMORY_SIZE);
+
+
     // Pass in the CPuState struct instead
     // Create and render the main window w/ all its subwindows
     MainWin *main_win = init_main_win(registers, memory);
     refresh_main_win(main_win);
 
+    // Start execution of program
+    start_pipeline(cpu_state, true, main_win);
 
     // MAIN EVENT LOOP
-    while (1) {
+    // while (1) {
+    //     start_pipeline(cpu_state, true, main_win);
+    //     // get_user_input(main_win->inp_win); 
+    //     // parse_command(main_win->inp_win->input_str, main_win, registers, memory);
 
-        get_user_input(main_win->inp_win); 
-        parse_command(main_win->inp_win->input_str, main_win, registers, memory);
-
-        // move the cursor back to the input window
-        wmove(main_win->inp_win->win, 1, 1 + PROMPT_SIZE);
-    }
+    //     // move the cursor back to the input window
+    //     // wmove(main_win->inp_win->win, 1, 1 + PROMPT_SIZE);
+    // }
 
     destroy_main_win(main_win);
+    cpu_state_free(cpu_state);
 
     return EXIT_SUCCESS;
 }
