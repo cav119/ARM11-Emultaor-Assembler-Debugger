@@ -14,22 +14,22 @@
 
 
 // Handle Ctrl+C signal smoothly
-void exit_program_handler(int sig) {
+static void exit_program_handler(int sig) {
     exit(EXIT_SUCCESS);
 }
 
 // Ncurses graceful cleanup (to avoid messing up the terminal)
-void destroy_gui(void) {
+static void destroy_gui(void) {
     endwin();
 }
 
+
 int main(int argc, char **argv) {
+    assert(argc == 2);
 
     // Make sure program terminates smoothly and clears the ncurses screen
     signal(SIGINT, &exit_program_handler);
     atexit(&destroy_gui);
-
-    assert(argc == 2);
 
     // Open binary file and check if it was a valid path to file
     FILE *prog_file = fopen(argv[1], "rb");               

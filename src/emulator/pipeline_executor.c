@@ -214,7 +214,8 @@ void start_pipeline(CpuState *cpu_state, bool is_extension, MainWin *win) {
     HashTable  *breakpoint_map = ht_create(compare_address);
     bool *is_stepping = malloc(sizeof(bool));
     *is_stepping = true;
-    if(is_extension) {
+    if (is_extension) {
+        // Load the memory and display it when the program is loaded
         print_to_output(win->out_win, "Loaded program. Type 'r' or 'run' to start the execution.");
         update_memory_map_by_word(win->memory_win, cpu_state->memory, 0);
         wmove(win->inp_win->win, 1, 1 + PROMPT_SIZE);

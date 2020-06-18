@@ -258,15 +258,6 @@ static void execute_print_comm(PrintCommand *comm, CpuState *cpu_state, MainWin 
     }
 }
 
-// static void print_help_comm(void) {
-//     puts("Use 'n' or 'next' to go to the next command");
-//     puts("please type <b> <MEMORY_LOCATION> to add a breakpoint");
-//     puts("Or print <FORMAT> <LOCATION><NUMBER> to print the state");
-//     printf("Where the format can be 'BIN' or 'HEX' or 'DEC', location can");
-//     puts(" be 'R' for registers, 'M' for memory and the number must be a positive integer");
-//     puts("Also, you can also use 'print' instead of 'p' for printing");
-// }
-
 static bool execute_command(char *input, ExecutableCommand *comm, CpuState *cpu_state, MainWin *win){
     switch (comm->type)  {
         case HELP_CMD:
